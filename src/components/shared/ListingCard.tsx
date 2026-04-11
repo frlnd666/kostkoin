@@ -1,9 +1,9 @@
 import { memo } from 'react'
 import { Link } from 'react-router-dom'
-import { MapPin, Clock, Users } from 'lucide-react'
-import Card from '../ui/Card'
+import { MapPin } from 'lucide-react'
+import Card  from '../ui/Card'
 import Badge from '../ui/Badge'
-import { formatRupiah } from '../../utils/formatRupiah'
+import { formatRupiah } from '../../utils/format'
 import type { Listing } from '../../types/listing'
 
 interface ListingCardProps {
@@ -14,7 +14,6 @@ const ListingCard = memo<ListingCardProps>(({ listing }) => {
   return (
     <Link to={`/listing/${listing.id}`}>
       <Card hoverable padding="none" className="overflow-hidden">
-        {/* Foto */}
         <div className="relative h-48 bg-slate-200">
           {listing.foto[0] ? (
             <img
@@ -28,39 +27,23 @@ const ListingCard = memo<ListingCardProps>(({ listing }) => {
               Tidak ada foto
             </div>
           )}
-          <div className="absolute top-2 left-2">
-            <Badge variant="info">{listing.tipe}</Badge>
-          </div>
-          <div className="absolute top-2 right-2">
-            <Badge variant="success">{listing.tipeSewa}</Badge>
-          </div>
         </div>
 
-        {/* Info */}
         <div className="p-4">
           <h3 className="font-semibold text-slate-900 truncate mb-1">{listing.nama}</h3>
-
           <div className="flex items-center gap-1 text-slate-500 text-xs mb-3">
             <MapPin size={12} />
-            <span className="truncate">{listing.kecamatan}, {listing.kota}</span>
+            <span className="truncate">{listing.alamat}, {listing.kota}</span>
           </div>
-
           <div className="flex items-center justify-between">
             <div>
               <span className="text-lg font-bold text-amber-500">
                 {formatRupiah(listing.harga)}
               </span>
-              <span className="text-xs text-slate-400 ml-1">
-                / {listing.tipeSewa === 'Per Jam' ? 'jam' : listing.tipeSewa === 'Per Hari' ? 'hari' : 'bulan'}
-              </span>
+              <span className="text-xs text-slate-400 ml-1">/bulan</span>
             </div>
-            <div className="flex items-center gap-1 text-slate-400 text-xs">
-              <Users size={12} />
-              <span>{listing.kapasitas} orang</span>
-            </div>
+            <Badge variant="success">Tersedia</Badge>
           </div>
-
-          {/* Fasilitas */}
           {listing.fasilitas.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-3">
               {listing.fasilitas.slice(0, 3).map(f => (
@@ -83,4 +66,3 @@ const ListingCard = memo<ListingCardProps>(({ listing }) => {
 
 ListingCard.displayName = 'ListingCard'
 export default ListingCard
- 
