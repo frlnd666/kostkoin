@@ -1,47 +1,46 @@
 import { memo, useEffect, useState } from 'react'
 import { useParams, useNavigate }    from 'react-router-dom'
 import { CheckCircle, XCircle, Clock, AlertCircle, RefreshCw } from 'lucide-react'
+import type { ReactElement }         from 'react'
 import Card    from '../../components/ui/Card'
 import Button  from '../../components/ui/Button'
 import Spinner from '../../components/ui/Spinner'
-import { getBookingById }                    from '../../services/bookingService'
+import { getBookingById }                      from '../../services/bookingService'
 import { createSnapToken, checkPaymentStatus } from '../../services/paymentService'
-import type { ReactElement } from 'react'
-import type { BookingStatus } from '../../types/booking'
-import { formatRupiah }    from '../../utils/format'
-import { formatTanggal }   from '../../utils/format'
+import type { Booking, BookingStatus }         from '../../types/booking'
+import { formatRupiah, formatTanggal }         from '../../utils/format'
 
 declare global {
   interface Window {
     snap: {
       pay: (token: string, options: {
-        onSuccess:  (result: any) => void
-        onPending:  (result: any) => void
-        onError:    (result: any) => void
-        onClose:    () => void
+        onSuccess: (result: any) => void
+        onPending: (result: any) => void
+        onError:   (result: any) => void
+        onClose:   () => void
       }) => void
     }
   }
 }
 
-const statusInfo = (status: string): { icon: ReactElement, label: string, color: string } => {
-  const map: Record<string, { icon: ReactElement, label: string, color: string }> = {
-    pending:   { icon: <Clock size={20} />,        label: 'Menunggu Pembayaran',  color: 'text-yellow-500' },
-    paid:      { icon: <CheckCircle size={20} />,  label: 'Pembayaran Berhasil',  color: 'text-green-500'  },
-    cancelled: { icon: <XCircle size={20} />,      label: 'Pembayaran Dibatalkan', color: 'text-red-500'   },
-    active:    { icon: <CheckCircle size={20} />,  label: 'Booking Aktif',        color: 'text-green-500'  },
+const statusInfo = (status: string): { icon: ReactElement; label: string; color: string } => {
+  const map: Record<string, { icon: ReactElement; label: string; color: string }> = {
+    pending:   { icon: <Clock size={20} />,       label: 'Menunggu Pembayaran',   color: 'text-yellow-500' },
+    paid:      { icon: <CheckCircle size={20} />, label: 'Pembayaran Berhasil',   color: 'text-green-500'  },
+    cancelled: { icon: <XCircle size={20} />,     label: 'Pembayaran Dibatalkan', color: 'text-red-500'    },
+    active:    { icon: <CheckCircle size={20} />, label: 'Booking Aktif',         color: 'text-green-500'  },
   }
   return map[status] ?? { icon: <Clock size={20} />, label: status, color: 'text-slate-500' }
 }
 
 const PaymentPage = memo(() => {
-  const { id }                      = useParams<{ id: string }>()
-  const navigate                    = useNavigate()
-  const [booking, setBooking]       = useState<Booking | null>(null)
-  const [loading, setLoading]       = useState(true)
-  const [paying, setPaying]         = useState(false)
-  const [checking, setChecking]     = useState(false)
-  const [error, setError]           = useState('')
+  const { id }                  = useParams<{ id: string }>()
+  const navigate                = useNavigate()
+  const [booking, setBooking]   = useState<Booking | null>(null)
+  const [loading, setLoading]   = useState(true)
+  const [paying, setPaying]     = useState(false)
+  const [checking, setChecking] = useState(false)
+  const [error, setError]       = useState('')
 
   useEffect(() => {
     if (!id) return
@@ -66,11 +65,11 @@ const PaymentPage = memo(() => {
 
       window.snap.pay(token, {
         onSuccess: () => {
-          setBooking(prev => prev ? { ...prev, status: 'paid' } : prev)
+          setBooking((prev: Booking | null) => prev ? { ...prev, status: 'paid' as BookingStatus } : prev)
           setPaying(false)
         },
         onPending: () => {
-          setBooking(prev => prev ? { ...prev, status: 'pending' } : prev)
+          setBooking((prev: Booking | null) => prev ? { ...prev, status: 'pending' as BookingStatus } : prev)
           setPaying(false)
         },
         onError: () => {
@@ -93,7 +92,7 @@ const PaymentPage = memo(() => {
     setError('')
     try {
       const status = await checkPaymentStatus(booking.orderId) as BookingStatus
-setBooking(prev => prev ? { ...prev, status } : prev)
+      setBooking((prev: Booking | null) => prev ? { ...prev, status } : prev)
     } catch (e: any) {
       setError(e.message ?? 'Gagal mengecek status pembayaran')
     } finally {
@@ -162,7 +161,7 @@ setBooking(prev => prev ? { ...prev, status } : prev)
         </div>
       )}
 
-      {/* Action */}
+      {/* Action Buttons */}
       {booking.status === 'pending' && (
         <div className="flex flex-col gap-3">
           <Button variant="primary" size="lg" fullWidth loading={paying} onClick={handlePay}>
@@ -196,7 +195,6 @@ setBooking(prev => prev ? { ...prev, status } : prev)
           </Button>
         </div>
       )}
-
     </main>
   )
 })
