@@ -1,4 +1,4 @@
-export type ListingStatus = 'pending' | 'approved' | 'rejected' | 'inactive'
+export type ListingStatus = 'pending' | 'approved' | 'active' | 'rejected' | 'inactive'
 
 export interface Listing {
   id:          string
