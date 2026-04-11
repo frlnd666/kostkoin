@@ -6,7 +6,8 @@ import Button  from '../../components/ui/Button'
 import Spinner from '../../components/ui/Spinner'
 import { getBookingById }                    from '../../services/bookingService'
 import { createSnapToken, checkPaymentStatus } from '../../services/paymentService'
-import type { Booking }    from '../../types/booking'
+import type { ReactElement } from 'react'
+import type { BookingStatus } from '../../types/booking'
 import { formatRupiah }    from '../../utils/format'
 import { formatTanggal }   from '../../utils/format'
 
@@ -23,8 +24,8 @@ declare global {
   }
 }
 
-const statusInfo = (status: string) => {
-  const map: Record<string, { icon: JSX.Element, label: string, color: string }> = {
+const statusInfo = (status: string): { icon: ReactElement, label: string, color: string } => {
+  const map: Record<string, { icon: ReactElement, label: string, color: string }> = {
     pending:   { icon: <Clock size={20} />,        label: 'Menunggu Pembayaran',  color: 'text-yellow-500' },
     paid:      { icon: <CheckCircle size={20} />,  label: 'Pembayaran Berhasil',  color: 'text-green-500'  },
     cancelled: { icon: <XCircle size={20} />,      label: 'Pembayaran Dibatalkan', color: 'text-red-500'   },
@@ -91,8 +92,8 @@ const PaymentPage = memo(() => {
     setChecking(true)
     setError('')
     try {
-      const status = await checkPaymentStatus(booking.orderId)
-      setBooking(prev => prev ? { ...prev, status } : prev)
+      const status = await checkPaymentStatus(booking.orderId) as BookingStatus
+setBooking(prev => prev ? { ...prev, status } : prev)
     } catch (e: any) {
       setError(e.message ?? 'Gagal mengecek status pembayaran')
     } finally {
