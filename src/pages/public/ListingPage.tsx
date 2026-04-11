@@ -1,21 +1,20 @@
 import { memo, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate }               from 'react-router-dom'
 import { Search, SlidersHorizontal, MapPin } from 'lucide-react'
 import Card    from '../../components/ui/Card'
-import Button  from '../../components/ui/Button'
 import Spinner from '../../components/ui/Spinner'
 import Badge   from '../../components/ui/Badge'
 import { getApprovedListings } from '../../services/listingService'
-import type { Listing } from '../../types/listing'
-import { formatRupiah } from '../../utils/format'
+import type { Listing }        from '../../types/listing'
+import { formatRupiah }        from '../../utils/format'
 
 const ListingPage = memo(() => {
-  const navigate             = useNavigate()
-  const [listings, setListings] = useState<Listing[]>([])
-  const [filtered, setFiltered] = useState<Listing[]>([])
-  const [loading, setLoading]   = useState(true)
-  const [search, setSearch]     = useState('')
-  const [kota, setKota]         = useState('')
+  const navigate                    = useNavigate()
+  const [listings, setListings]     = useState<Listing[]>([])
+  const [filtered, setFiltered]     = useState<Listing[]>([])
+  const [loading, setLoading]       = useState(true)
+  const [search, setSearch]         = useState('')
+  const [kota, setKota]             = useState('')
 
   useEffect(() => {
     getApprovedListings()
@@ -77,13 +76,24 @@ const ListingPage = memo(() => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(listing => (
-            <Card key={listing.id} padding="none" className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/listing/${listing.id}`)}>
+            <Card
+              key={listing.id}
+              padding="none"
+              className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => navigate(`/listing/${listing.id}`)}
+            >
               {/* Foto */}
               <div className="h-44 bg-slate-100 overflow-hidden">
                 {listing.foto?.[0] ? (
-                  <img src={listing.foto[0]} alt={listing.nama} className="w-full h-full object-cover" />
+                  <img
+                    src={listing.foto[0]}
+                    alt={listing.nama}
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-300 text-4xl">🏠</div>
+                  <div className="w-full h-full flex items-center justify-center text-slate-300 text-4xl">
+                    🏠
+                  </div>
                 )}
               </div>
 
@@ -96,7 +106,9 @@ const ListingPage = memo(() => {
                 </div>
                 <div className="flex items-center justify-between mt-3">
                   <div>
-                    <span className="text-amber-500 font-bold text-base">{formatRupiah(listing.harga)}</span>
+                    <span className="text-amber-500 font-bold text-base">
+                      {formatRupiah(listing.harga)}
+                    </span>
                     <span className="text-slate-400 text-xs">/bulan</span>
                   </div>
                   <Badge variant="success">Tersedia</Badge>
