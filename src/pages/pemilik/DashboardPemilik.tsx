@@ -28,7 +28,7 @@ const DashboardPemilik = memo(() => {
 
   useEffect(() => {
     if (!user) return
-    getListingsByPemilik(user.uid ?? user.id)
+    getListingsByPemilik(user.id)
       .then(setListings)
       .finally(() => setLoading(false))
   }, [user])
