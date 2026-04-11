@@ -1,6 +1,6 @@
 import { memo, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, SlidersHorizontal, MapPin, Star } from 'lucide-react'
+import { Search, SlidersHorizontal, MapPin } from 'lucide-react'
 import Card    from '../../components/ui/Card'
 import Button  from '../../components/ui/Button'
 import Spinner from '../../components/ui/Spinner'
