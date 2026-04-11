@@ -69,7 +69,7 @@ const TambahListing = memo(() => {
     setError('')
 
     try {
-      const userId = user.id ?? user.uid ?? ''
+      const userId = user.uid
       console.log('✅ userId:', userId)
       console.log('📸 Mulai upload foto ke Cloudinary...')
 
@@ -93,6 +93,7 @@ const TambahListing = memo(() => {
         deskripsi:   data.deskripsi,
         fasilitas:   fasilitasList,
         foto:        [urls.kamar, urls.tempat_tidur, urls.fasilitas],
+        pemilikId:   userId,
         pemilikNama: user.nama,
       }, userId)
 
