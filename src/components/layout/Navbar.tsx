@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Home, Search, PlusSquare, User, LayoutDashboard } from 'lucide-react'
+import { Home, Search, User, LayoutDashboard } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { APP_NAME } from '../../constants'
 
