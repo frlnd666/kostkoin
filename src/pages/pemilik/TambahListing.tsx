@@ -6,7 +6,7 @@ import Card    from '../../components/ui/Card'
 import Button  from '../../components/ui/Button'
 import { addListing }        from '../../services/listingService'
 import { uploadFotoListing } from '../../services/storageService'
-import type { TipeHarga } from '../../types/listing'
+
 import { useAuthStore }      from '../../store/authStore'
 
 const KOTA_BANTEN = [
