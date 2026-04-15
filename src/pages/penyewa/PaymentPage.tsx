@@ -1,6 +1,6 @@
 import { memo, useEffect, useState } from 'react'
 import { useParams, useNavigate }    from 'react-router-dom'
-import { CheckCircle, XCircle, Clock, AlertCircle, RefreshCw } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, AlertCircle, RefreshCw, FileText } from 'lucide-react'
 import type { ReactElement }         from 'react'
 import Card    from '../../components/ui/Card'
 import Button  from '../../components/ui/Button'
@@ -23,14 +23,15 @@ declare global {
   }
 }
 
-const statusInfo = (status: string): { icon: ReactElement; label: string; color: string } => {
-  const map: Record<string, { icon: ReactElement; label: string; color: string }> = {
-    pending:   { icon: <Clock size={20} />,       label: 'Menunggu Pembayaran',   color: 'text-yellow-500' },
-    paid:      { icon: <CheckCircle size={20} />, label: 'Pembayaran Berhasil',   color: 'text-green-500'  },
-    cancelled: { icon: <XCircle size={20} />,     label: 'Pembayaran Dibatalkan', color: 'text-red-500'    },
-    active:    { icon: <CheckCircle size={20} />, label: 'Booking Aktif',         color: 'text-green-500'  },
+const statusInfo = (status: string): { icon: ReactElement; label: string; color: string; bg: string } => {
+  const map: Record<string, { icon: ReactElement; label: string; color: string; bg: string }> = {
+    pending:   { icon: <Clock size={20} />,       label: 'Menunggu Pembayaran',   color: 'text-yellow-600', bg: 'bg-yellow-50 border-yellow-200' },
+    paid:      { icon: <CheckCircle size={20} />, label: 'Pembayaran Berhasil',   color: 'text-green-600',  bg: 'bg-green-50 border-green-200'   },
+    active:    { icon: <CheckCircle size={20} />, label: 'Booking Aktif',         color: 'text-green-600',  bg: 'bg-green-50 border-green-200'   },
+    done:      { icon: <CheckCircle size={20} />, label: 'Sewa Selesai',          color: 'text-slate-600',  bg: 'bg-slate-50 border-slate-200'   },
+    cancelled: { icon: <XCircle size={20} />,     label: 'Pembayaran Dibatalkan', color: 'text-red-600',    bg: 'bg-red-50 border-red-200'       },
   }
-  return map[status] ?? { icon: <Clock size={20} />, label: status, color: 'text-slate-500' }
+  return map[status] ?? { icon: <Clock size={20} />, label: status, color: 'text-slate-500', bg: 'bg-slate-50 border-slate-200' }
 }
 
 const PaymentPage = memo(() => {
@@ -108,21 +109,25 @@ const PaymentPage = memo(() => {
     </div>
   )
 
-  const { icon, label, color } = statusInfo(booking.status)
+  const { icon, label, color, bg } = statusInfo(booking.status)
+  const satuanLabel = booking.tipeHarga === 'perhari' ? 'hari' : 'bulan'
+
+  // Hitung rincian — fallback untuk booking lama yang belum punya field baru
+  const subtotal    = booking.subtotal      ?? booking.harga * booking.durasi
+  const biayaLayan  = booking.biayaLayanan  ?? Math.round(subtotal * 0.1)
+  const biayaMidtrans = booking.biayaMidtrans ?? 4_000
 
   return (
     <main className="max-w-lg mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-slate-900 mb-6">Detail Pembayaran</h1>
 
-      {/* Status */}
-      <Card padding="md" className="mb-4">
-        <div className={`flex items-center gap-2 font-semibold ${color}`}>
-          {icon}
-          <span>{label}</span>
-        </div>
-      </Card>
+      {/* ── Status ── */}
+      <div className={`flex items-center gap-2 font-semibold px-4 py-3 rounded-xl border mb-4 ${color} ${bg}`}>
+        {icon}
+        <span>{label}</span>
+      </div>
 
-      {/* Info Booking */}
+      {/* ── Info Booking ── */}
       <Card padding="md" className="mb-4">
         <h3 className="font-semibold text-slate-700 mb-3">Detail Booking</h3>
         <div className="flex flex-col gap-2 text-sm">
@@ -131,24 +136,34 @@ const PaymentPage = memo(() => {
             { label: 'Alamat',          value: booking.listingAlamat },
             { label: 'Tanggal Mulai',   value: formatTanggal(booking.tanggalMulai) },
             { label: 'Tanggal Selesai', value: formatTanggal(booking.tanggalSelesai) },
-            { label: 'Durasi',          value: `${booking.durasi} Bulan` },
+            { label: 'Durasi',          value: `${booking.durasi} ${satuanLabel}` },
+            { label: 'No. Order',       value: booking.orderId ?? '-' },
           ].map((item, i) => (
             <div key={i} className="flex justify-between gap-4">
               <span className="text-slate-400 shrink-0">{item.label}</span>
-              <span className="text-slate-700 font-medium text-right">{item.value}</span>
+              <span className="text-slate-700 font-medium text-right break-all">{item.value}</span>
             </div>
           ))}
         </div>
       </Card>
 
-      {/* Ringkasan Biaya */}
+      {/* ── Ringkasan Biaya ── */}
       <Card padding="md" className="mb-4 bg-amber-50 border border-amber-100">
-        <div className="flex flex-col gap-1.5 text-sm">
+        <h3 className="font-semibold text-slate-700 mb-3">Rincian Biaya</h3>
+        <div className="flex flex-col gap-2 text-sm">
           <div className="flex justify-between text-slate-600">
-            <span>{formatRupiah(booking.harga)} × {booking.durasi} bulan</span>
-            <span>{formatRupiah(booking.totalHarga)}</span>
+            <span>{formatRupiah(booking.harga)} × {booking.durasi} {satuanLabel}</span>
+            <span>{formatRupiah(subtotal)}</span>
           </div>
-          <div className="border-t border-amber-200 pt-1.5 flex justify-between font-bold text-slate-900">
+          <div className="flex justify-between text-slate-500">
+            <span>Biaya layanan (10%)</span>
+            <span>{formatRupiah(biayaLayan)}</span>
+          </div>
+          <div className="flex justify-between text-slate-500">
+            <span>Biaya pembayaran</span>
+            <span>{formatRupiah(biayaMidtrans)}</span>
+          </div>
+          <div className="border-t border-amber-200 pt-2 mt-1 flex justify-between font-bold text-slate-900">
             <span>Total Pembayaran</span>
             <span className="text-amber-500 text-base">{formatRupiah(booking.totalHarga)}</span>
           </div>
@@ -161,11 +176,11 @@ const PaymentPage = memo(() => {
         </div>
       )}
 
-      {/* Action Buttons */}
+      {/* ── Action: Pending ── */}
       {booking.status === 'pending' && (
         <div className="flex flex-col gap-3">
           <Button variant="primary" size="lg" fullWidth loading={paying} onClick={handlePay}>
-            Bayar Sekarang {formatRupiah(booking.totalHarga)}
+            Bayar Sekarang — {formatRupiah(booking.totalHarga)}
           </Button>
           <Button variant="ghost" size="lg" fullWidth loading={checking} onClick={handleCekStatus}>
             <RefreshCw size={15} className="mr-1.5" />
@@ -174,17 +189,46 @@ const PaymentPage = memo(() => {
         </div>
       )}
 
-      {booking.status === 'paid' && (
+      {/* ── Action: Paid / Active ── */}
+      {(booking.status === 'paid' || booking.status === 'active') && (
         <div className="flex flex-col gap-3">
           <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-green-700 text-sm text-center font-medium">
             🎉 Pembayaran berhasil! Selamat menikmati kost kamu.
           </div>
-          <Button variant="ghost" size="lg" fullWidth onClick={() => navigate('/')}>
-            Kembali ke Beranda
+          <Button
+            variant="primary"
+            size="lg"
+            fullWidth
+            onClick={() => navigate(`/booking/${booking.id}/bukti`)}
+          >
+            <FileText size={16} className="mr-1.5" />
+            Lihat Bukti Pembayaran
+          </Button>
+          <Button variant="ghost" size="lg" fullWidth onClick={() => navigate('/riwayat')}>
+            Riwayat Booking
           </Button>
         </div>
       )}
 
+      {/* ── Action: Done ── */}
+      {booking.status === 'done' && (
+        <div className="flex flex-col gap-3">
+          <Button
+            variant="ghost"
+            size="lg"
+            fullWidth
+            onClick={() => navigate(`/booking/${booking.id}/bukti`)}
+          >
+            <FileText size={16} className="mr-1.5" />
+            Lihat Bukti Pembayaran
+          </Button>
+          <Button variant="primary" size="lg" fullWidth onClick={() => navigate('/listing')}>
+            Cari Kost Lagi
+          </Button>
+        </div>
+      )}
+
+      {/* ── Action: Cancelled ── */}
       {booking.status === 'cancelled' && (
         <div className="flex flex-col gap-3">
           <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-700 text-sm text-center">
@@ -195,6 +239,7 @@ const PaymentPage = memo(() => {
           </Button>
         </div>
       )}
+
     </main>
   )
 })
