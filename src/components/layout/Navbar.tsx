@@ -1,56 +1,68 @@
 import { memo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Home, Search, User, LayoutDashboard } from 'lucide-react'
+import { Home, Search, User, LayoutDashboard, FileText } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
-import { APP_NAME } from '../../constants'
+import { APP_NAME }     from '../../constants'
 
 const Navbar = memo(() => {
   const location = useLocation()
   const { user }  = useAuthStore()
 
   const navItems = [
-    { label: 'Beranda',  href: '/',        icon: Home },
-    { label: 'Cari',     href: '/listing', icon: Search },
+    { label: 'Beranda', href: '/',        icon: Home },
+    { label: 'Cari',    href: '/listing', icon: Search },
+    ...(user?.role === 'penyewa' ? [
+      { label: 'Riwayat', href: '/riwayat', icon: FileText },
+    ] : []),
     ...(user?.role === 'pemilik' ? [
       { label: 'Kelola', href: '/pemilik/dashboard', icon: LayoutDashboard },
     ] : []),
     ...(user?.role === 'admin' ? [
-      { label: 'Admin',  href: '/admin/dashboard', icon: LayoutDashboard },
+      { label: 'Admin', href: '/admin/dashboard', icon: LayoutDashboard },
     ] : []),
-    { label: user ? user.nama.split(' ')[0] : 'Akun', href: user ? '/profil' : '/login', icon: User },
+    {
+      label: user ? user.nama.split(' ')[0] : 'Akun',
+      href:  user ? '/profil' : '/login',
+      icon:  User,
+    },
   ]
 
-  // Halaman yang tidak perlu navbar (auth pages)
   const hideOn = ['/login', '/register']
   if (hideOn.includes(location.pathname)) return null
 
   return (
     <>
-      {/* Top Bar — Logo */}
+      {/* ── Top Bar ── */}
       <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-1">
-            <span className="text-xl font-bold text-amber-400">{APP_NAME}</span>
+          <Link to="/" className="flex items-center gap-1.5">
+            <div className="w-7 h-7 bg-amber-400 rounded-lg flex items-center justify-center">
+              <span className="text-slate-900 font-extrabold text-xs">K</span>
+            </div>
+            <span className="text-lg font-extrabold text-slate-900">{APP_NAME}</span>
             <span className="text-xs text-slate-400 font-normal hidden sm:block">· Banten</span>
           </Link>
 
-          {/* User Info di Top Bar (Desktop) */}
           {user && (
             <div className="hidden md:flex items-center gap-2 text-sm text-slate-600">
-              <div className="w-7 h-7 rounded-full bg-amber-400 flex items-center justify-center text-white text-xs font-bold">
+              <div className="w-7 h-7 rounded-full bg-amber-400 flex items-center justify-center text-slate-900 text-xs font-bold">
                 {user.nama.charAt(0).toUpperCase()}
               </div>
-              <span>{user.nama}</span>
+              <span className="font-medium">{user.nama}</span>
+              <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                {user.role}
+              </span>
             </div>
           )}
         </div>
       </header>
 
-      {/* Bottom Navigation */}
+      {/* ── Bottom Navigation ── */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-lg">
         <div className="max-w-lg mx-auto px-2 h-16 flex items-center justify-around">
           {navItems.map(({ label, href, icon: Icon }) => {
-            const isActive = location.pathname === href ||
+            const isActive =
+              location.pathname === href ||
               (href !== '/' && location.pathname.startsWith(href))
 
             return (
