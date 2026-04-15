@@ -14,6 +14,8 @@ import RiwayatBooking     from './pages/pemilik/RiwayatBooking'
 import AdminDashboard     from './pages/admin/AdminDashboard'
 import ProfilPage         from './pages/penyewa/ProfilPage'
 import BookingPage from './pages/penyewa/BookingPage'
+import RiwayatBooking from './pages/penyewa/RiwayatBooking'
+import BuktiBooking   from './pages/penyewa/BuktiBooking'
 import { useAuthStore }   from './store/authStore'
 import { onAuthChange, getUserData } from './services/authService'
 import PaymentPage from './pages/penyewa/PaymentPage'
@@ -84,6 +86,17 @@ function App() {
 <Route path="/payment/:id" element={
   <ProtectedRoute allowedRoles={['penyewa']}>
     <PaymentPage />
+  </ProtectedRoute>
+} />
+            <Route path="/riwayat" element={
+  <ProtectedRoute allowedRoles={['penyewa']}>
+    <RiwayatBooking />
+  </ProtectedRoute>
+} />
+
+<Route path="/booking/:id/bukti" element={
+  <ProtectedRoute allowedRoles={['penyewa']}>
+    <BuktiBooking />
   </ProtectedRoute>
 } />
 
