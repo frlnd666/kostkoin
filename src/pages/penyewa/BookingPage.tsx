@@ -29,11 +29,7 @@ const hitungTanggalSelesai = (
   return d.toISOString().split('T')[0]
 }
 
-const hitungTotal = (harga: number, durasi: number): number => {
-  const subtotal    = harga * durasi
-  const biayaLayan  = Math.round(subtotal * FEE_PERSEN)
-  return subtotal + biayaLayan + BIAYA_MIDTRANS
-}
+
 
 // ── Opsi durasi ────────────────────────────────────────────
 const DURASI_HARIAN  = [1, 2, 3, 5, 7, 14, 30]
