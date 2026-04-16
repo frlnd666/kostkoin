@@ -1,7 +1,7 @@
 import { memo, useEffect, useState } from 'react'
 import { Search, SlidersHorizontal } from 'lucide-react'
 import Spinner from '../../components/ui/Spinner'
-import ListingCard from '../../components/ListingCard'
+import ListingCard from '../../components/shared/ListingCard'
 import { getApprovedListings } from '../../services/listingService'
 import type { Listing } from '../../types/listing'
 
