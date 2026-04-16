@@ -11,12 +11,12 @@ interface AuthState {
   logout:        () => void
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const { user, logout, setUser } = useAuthStore()
   user:        null,
   loading:     true,
   initialized: false,
 
-  setUser:        (user)        => set({ user }),
+  setUser: (user: User) => set({ user }),
   setLoading:     (loading)     => set({ loading }),
   setInitialized: (initialized) => set({ initialized }),
   logout:         ()            => set({ user: null }),
