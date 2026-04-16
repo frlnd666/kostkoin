@@ -1,0 +1,97 @@
+/* ============================================
+   KOSTKOIN — Dark Luxury Design System
+   Palet: Warm Dark · Teal · Gold (tanpa success)
+   Fonts: Zodiak (display) + Satoshi (body)
+   ============================================ */
+
+@import url('https://api.fontshare.com/v2/css?f[]=zodiak@400,500,700&f[]=satoshi@300,400,500,700&display=swap');
+
+:root {
+  /* Fonts */
+  --font-display: 'Zodiak', 'Georgia', serif;
+  --font-body:    'Satoshi', 'Inter', sans-serif;
+
+  /* ── Surfaces ── */
+  --color-bg:               #0d0d0b;
+  --color-surface:          #141412;
+  --color-surface-2:        #191917;
+  --color-surface-offset:   #1f1f1d;
+  --color-surface-dynamic:  #262624;
+  --color-divider:          rgba(255, 255, 255, 0.06);
+  --color-border:           rgba(255, 255, 255, 0.07);
+
+  /* ── Text ── */
+  --color-text:             #ddd9d2;
+  --color-text-muted:       #7a7870;
+  --color-text-faint:       #3e3e3c;
+  --color-text-inverse:     #0d0d0b;
+
+  /* ── Teal — navigasi, status, tag ── */
+  --color-primary:          #4a8f9a;
+  --color-primary-hover:    #3a7880;
+  --color-primary-active:   #2d626b;
+  --color-primary-subtle:   rgba(74, 143, 154, 0.07);
+  --color-primary-border:   rgba(74, 143, 154, 0.14);
+
+  /* ── Gold — harga, badge premium, CTA ── */
+  --color-gold:             #c9973a;
+  --color-gold-hover:       #b5841f;
+  --color-gold-active:      #9e700f;
+  --color-gold-subtle:      rgba(201, 151, 58, 0.07);
+  --color-gold-border:      rgba(201, 151, 58, 0.16);
+
+  /* ── Status — tanpa hijau ── */
+  /* "Tersedia" → teal  |  "Penuh" → muted  |  "Premium" → gold */
+
+  /* ── Error ── */
+  --color-error:            #a85050;
+  --color-error-subtle:     rgba(168, 80, 80, 0.07);
+  --color-error-border:     rgba(168, 80, 80, 0.16);
+
+  /* ── Glass ── */
+  --glass-bg:               rgba(20, 20, 18, 0.82);
+  --glass-border:           rgba(255, 255, 255, 0.055);
+  --glass-blur:             blur(20px);
+
+  /* ── Shadows — pure black, no color cast ── */
+  --shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md:  0 4px 20px rgba(0, 0, 0, 0.45);
+  --shadow-lg:  0 16px 48px rgba(0, 0, 0, 0.55);
+
+  /* ── Radius ── */
+  --radius-sm:   0.375rem;
+  --radius-md:   0.5rem;
+  --radius-lg:   0.875rem;
+  --radius-xl:   1.25rem;
+  --radius-full: 9999px;
+
+  /* ── Transitions ── */
+  --transition: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ── Spacing ── */
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-5:  1.25rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+
+  /* ── Type Scale ── */
+  --text-xs:   clamp(0.75rem,  0.7rem  + 0.25vw, 0.875rem);
+  --text-sm:   clamp(0.875rem, 0.8rem  + 0.35vw, 1rem);
+  --text-base: clamp(1rem,     0.95rem + 0.25vw, 1.125rem);
+  --text-lg:   clamp(1.125rem, 1rem    + 0.75vw, 1.5rem);
+  --text-xl:   clamp(1.5rem,   1.2rem  + 1.25vw, 2.25rem);
+  --text-2xl:  clamp(2rem,     1.2rem  + 2.5vw,  3.5rem);
+
+  /* ── Content Widths ── */
+  --content-narrow:  640px;
+  --content-default: 960px;
+  --content-wide:    1200px;
+}
