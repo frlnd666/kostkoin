@@ -27,19 +27,21 @@ const DetailPage = memo(() => {
   }, [id])
 
   const handleShare = async () => {
-    const url = window.location.href
-    if (navigator.share) {
-      await navigator.share({
-        title: listing?.nama ?? 'Kost',
-        text:  listing?.deskripsi ?? '',
-        url,
-      })
-    } else {
-      await navigator.clipboard.writeText(url)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }
+  const url = window.location.href
+  const teks = `🏠 *${listing?.nama}*\n📍 ${listing?.alamat}, ${listing?.kota}\n💰 ${formatRupiah(listing?.harga ?? 0)}/bulan\n\nCek di KostKoin 👇\n${url}`
+
+  if (navigator.share) {
+    await navigator.share({
+      title: listing?.nama ?? 'KostKoin',
+      text:  teks,
+      url,
+    })
+  } else {
+    await navigator.clipboard.writeText(`${teks}`)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
+}
 
   if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>
   if (!listing) return (
