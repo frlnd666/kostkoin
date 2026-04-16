@@ -13,7 +13,7 @@ import { APP_NAME } from '../../constants'
 
 const ProfilPage = memo(() => {
   const navigate              = useNavigate()
-  const { user, logout, setUser } = useAuthStore()
+  const { user, logout, setUser, updateUser } = useAuthStore()
 
   // ── State Logout ─────────────────────────────────────────
   const [logoutModal, setLogoutModal]   = useState(false)
@@ -53,18 +53,21 @@ const ProfilPage = memo(() => {
   }
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setLoadingAvatar(true); setErrAvatar('')
-    try {
-      const fotoUrl = await updateUserAvatar(file)
-      if (user) setUser({ ...user, fotoUrl })
-    } catch (err: any) {
-      setErrAvatar(err?.message ?? 'Gagal upload foto, coba lagi')
-    } finally {
-      setLoadingAvatar(false)
-    }
+  const file = e.target.files?.[0]
+  if (!file) return
+  setLoadingAvatar(true); setErrAvatar('')
+  try {
+    const fotoUrl = await updateUserAvatar(file)
+    // Update store dengan field fotoUrl yang baru
+    updateUser({ fotoUrl })
+  } catch (err: any) {
+    setErrAvatar(err?.message ?? 'Gagal upload foto, coba lagi')
+  } finally {
+    setLoadingAvatar(false)
+    // Reset input agar file yang sama bisa dipilih ulang
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
+}
 
   // ── Role Badge ───────────────────────────────────────────
   const roleBadge = () => {
@@ -86,7 +89,7 @@ const ProfilPage = memo(() => {
 
   if (!user) { navigate('/login'); return null }
 
-  const fotoUrl = (user as any).fotoUrl as string | undefined
+  const fotoUrl = user?.fotoUrl as string | undefined
 
   // ── Render ───────────────────────────────────────────────
   return (
