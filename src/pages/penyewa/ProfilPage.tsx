@@ -4,7 +4,6 @@ import {
   User, Mail, Phone, Shield, Home,
   LogOut, ChevronRight, Camera, Pencil, Check, X
 } from 'lucide-react'
-import Card   from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import Badge  from '../../components/ui/Badge'
 import Modal  from '../../components/ui/Modal'
@@ -80,7 +79,7 @@ const ProfilPage = memo(() => {
       const photoURL = await getDownloadURL(storageRef)
       await updateProfile(auth.currentUser, { photoURL })
 
-      if (user) setUser({ ...user, photoURL })
+      if (user) setUser({ ...user, fotoUrl })
     } catch {
       setErrAvatar('Gagal upload foto, coba lagi')
     } finally {
@@ -109,7 +108,7 @@ const ProfilPage = memo(() => {
   if (!user) { navigate('/login'); return null }
 
   // Foto avatar: dari Firebase Auth atau initial
-  const photoURL = (user as any).photoURL as string | undefined
+  const fotoUrl = (user as any).fotoUrl as string | undefined
 
   return (
     <main style={{
@@ -137,9 +136,9 @@ const ProfilPage = memo(() => {
 
           {/* Avatar dengan tombol ganti */}
           <div style={{ position: 'relative', flexShrink: 0 }}>
-            {photoURL ? (
+            {fotoURL ? (
               <img
-                src={photoURL}
+                src={fotoURL}
                 alt={user.nama}
                 style={{
                   width: 64, height: 64, borderRadius: '50%',
