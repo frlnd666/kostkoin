@@ -1,7 +1,7 @@
 import { memo } from 'react'
 import { Link } from 'react-router-dom'
 import { Search, MapPin, Shield, Star, ChevronRight } from 'lucide-react'
-import { APP_NAME, APP_TAGLINE } from '../../constants'
+import { APP_TAGLINE } from '../../constants'
 
 const HomePage = memo(() => {
   return (
