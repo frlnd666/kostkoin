@@ -10,11 +10,8 @@ import {
   doc, setDoc, getDoc,
   serverTimestamp, updateDoc,
 } from 'firebase/firestore'
-import {
-  getStorage, ref,
-  uploadBytes, getDownloadURL,
-} from 'firebase/storage'
-import { auth, db } from './firebase'
+import { auth, db }    from './firebase'
+import { uploadFoto }  from './storageService'
 import type { User, UserRole } from '../types/user'
 
 // ── Register ────────────────────────────────────────────────
@@ -79,25 +76,23 @@ export const updateUserName = async (nama: string): Promise<void> => {
   await updateDoc(doc(db, 'users', user.uid), { nama })
 }
 
-// ── Upload & Update Avatar ───────────────────────────────────
+// ── Update Avatar via Cloudinary ─────────────────────────────
 export const updateUserAvatar = async (file: File): Promise<string> => {
-  const user    = auth.currentUser
-  const storage = getStorage()
+  const user = auth.currentUser
   if (!user) throw new Error('User tidak ditemukan')
 
-  // Validasi ukuran maks 2MB
   if (file.size > 2 * 1024 * 1024) {
     throw new Error('Ukuran foto maksimal 2MB')
   }
 
-  const storageRef = ref(storage, `avatars/${user.uid}`)
-  await uploadBytes(storageRef, file)
-  const photoURL = await getDownloadURL(storageRef)
+  // Upload ke Cloudinary folder avatars
+  const fotoUrl = await uploadFoto(file, `kostkoin/avatars/${user.uid}`)
 
-  await updateProfile(user, { photoURL })
-  await updateDoc(doc(db, 'users', user.uid), { fotoUrl: photoURL })
+  // Sync ke Firebase Auth & Firestore
+  await updateProfile(user, { photoURL: fotoUrl })
+  await updateDoc(doc(db, 'users', user.uid), { fotoUrl })
 
-  return photoURL
+  return fotoUrl
 }
 
 // ── Auth State Listener ──────────────────────────────────────
