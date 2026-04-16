@@ -7,31 +7,30 @@ import {
 import Button from '../../components/ui/Button'
 import Badge  from '../../components/ui/Badge'
 import Modal  from '../../components/ui/Modal'
-import { useAuthStore }  from '../../store/authStore'
-import { logoutUser }    from '../../services/authService'
-import { getAuth, updateProfile } from 'firebase/auth'
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { useAuthStore }               from '../../store/authStore'
+import { logoutUser, updateUserName, updateUserAvatar } from '../../services/authService'
 import { APP_NAME } from '../../constants'
 
 const ProfilPage = memo(() => {
-  const navigate         = useNavigate()
+  const navigate              = useNavigate()
   const { user, logout, setUser } = useAuthStore()
 
-  const [logoutModal, setLogoutModal] = useState(false)
+  // ── State Logout ─────────────────────────────────────────
+  const [logoutModal, setLogoutModal]   = useState(false)
   const [loadingLogout, setLoadingLogout] = useState(false)
 
-  // Edit nama
+  // ── State Edit Nama ──────────────────────────────────────
   const [editNama, setEditNama]       = useState(false)
   const [namaBaru, setNamaBaru]       = useState(user?.nama ?? '')
   const [loadingNama, setLoadingNama] = useState(false)
   const [errNama, setErrNama]         = useState('')
 
-  // Upload avatar
+  // ── State Upload Avatar ──────────────────────────────────
   const [loadingAvatar, setLoadingAvatar] = useState(false)
   const [errAvatar, setErrAvatar]         = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // ── Logout ───────────────────────────────────────────────
+  // ── Handlers ─────────────────────────────────────────────
   const handleLogout = async () => {
     setLoadingLogout(true)
     await logoutUser()
@@ -39,16 +38,11 @@ const ProfilPage = memo(() => {
     navigate('/')
   }
 
-  // ── Simpan Nama ──────────────────────────────────────────
   const handleSaveNama = async () => {
     if (!namaBaru.trim()) { setErrNama('Nama tidak boleh kosong'); return }
     setLoadingNama(true); setErrNama('')
     try {
-      const auth = getAuth()
-      if (auth.currentUser) {
-        await updateProfile(auth.currentUser, { displayName: namaBaru.trim() })
-      }
-      // Update store — sesuaikan dengan shape store kamu
+      await updateUserName(namaBaru.trim())
       if (user) setUser({ ...user, nama: namaBaru.trim() })
       setEditNama(false)
     } catch {
@@ -58,36 +52,21 @@ const ProfilPage = memo(() => {
     }
   }
 
-  // ── Upload Avatar ────────────────────────────────────────
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-
-    // Validasi ukuran maks 2MB
-    if (file.size > 2 * 1024 * 1024) {
-      setErrAvatar('Ukuran foto maks 2MB'); return
-    }
-
     setLoadingAvatar(true); setErrAvatar('')
     try {
-      const auth    = getAuth()
-      const storage = getStorage()
-      if (!auth.currentUser) throw new Error('Not authenticated')
-
-      const storageRef = ref(storage, `avatars/${auth.currentUser.uid}`)
-      await uploadBytes(storageRef, file)
-      const photoURL = await getDownloadURL(storageRef)
-      await updateProfile(auth.currentUser, { photoURL })
-
+      const fotoUrl = await updateUserAvatar(file)
       if (user) setUser({ ...user, fotoUrl })
-    } catch {
-      setErrAvatar('Gagal upload foto, coba lagi')
+    } catch (err: any) {
+      setErrAvatar(err?.message ?? 'Gagal upload foto, coba lagi')
     } finally {
       setLoadingAvatar(false)
     }
   }
 
-  // ── Badge Role ───────────────────────────────────────────
+  // ── Role Badge ───────────────────────────────────────────
   const roleBadge = () => {
     if (user?.role === 'admin')   return <Badge variant="danger">Admin</Badge>
     if (user?.role === 'pemilik') return <Badge variant="info">Pemilik Kost</Badge>
@@ -96,8 +75,8 @@ const ProfilPage = memo(() => {
 
   const menuItems = [
     ...(user?.role === 'pemilik' ? [
-      { label: 'Dashboard Pemilik', icon: <Home size={18}/>,        href: '/pemilik/dashboard' },
-      { label: 'Tambah Listing',    icon: <Home size={18}/>,        href: '/pemilik/tambah' },
+      { label: 'Dashboard Pemilik', icon: <Home size={18}/>,         href: '/pemilik/dashboard' },
+      { label: 'Tambah Listing',    icon: <Home size={18}/>,         href: '/pemilik/tambah' },
       { label: 'Riwayat Booking',   icon: <ChevronRight size={18}/>, href: '/pemilik/booking' },
     ] : []),
     ...(user?.role === 'admin' ? [
@@ -107,15 +86,17 @@ const ProfilPage = memo(() => {
 
   if (!user) { navigate('/login'); return null }
 
-  // Foto avatar: dari Firebase Auth atau initial
   const fotoUrl = (user as any).fotoUrl as string | undefined
 
+  // ── Render ───────────────────────────────────────────────
   return (
     <main style={{
       maxWidth: 480, margin: '0 auto',
       padding: '2rem 1rem 5rem',
       background: 'var(--color-bg)', minHeight: '100vh'
     }}>
+
+      {/* Judul */}
       <h1 style={{
         fontFamily: 'var(--font-display)',
         fontSize: 'clamp(1.4rem, 5vw, 1.75rem)',
@@ -125,7 +106,7 @@ const ProfilPage = memo(() => {
         Profil Saya
       </h1>
 
-      {/* ── Avatar & Nama ── */}
+      {/* ── Kartu Avatar & Nama ── */}
       <div style={{
         background: 'var(--color-surface)',
         border: '1px solid var(--color-border)',
@@ -134,11 +115,11 @@ const ProfilPage = memo(() => {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
 
-          {/* Avatar dengan tombol ganti */}
+          {/* Avatar */}
           <div style={{ position: 'relative', flexShrink: 0 }}>
-            {fotoURL ? (
+            {fotoUrl ? (
               <img
-                src={fotoURL}
+                src={fotoUrl}
                 alt={user.nama}
                 style={{
                   width: 64, height: 64, borderRadius: '50%',
@@ -152,8 +133,7 @@ const ProfilPage = memo(() => {
                 background: 'var(--color-gold)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '1.5rem', fontWeight: 700,
-                color: 'var(--color-text-inverse)',
-                border: '2px solid var(--color-gold-border)'
+                color: 'var(--color-text-inverse)'
               }}>
                 {user.nama.charAt(0).toUpperCase()}
               </div>
@@ -163,6 +143,7 @@ const ProfilPage = memo(() => {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={loadingAvatar}
+              title="Ganti foto profil"
               style={{
                 position: 'absolute', bottom: 0, right: 0,
                 width: 22, height: 22, borderRadius: '50%',
@@ -172,13 +153,13 @@ const ProfilPage = memo(() => {
                 cursor: loadingAvatar ? 'wait' : 'pointer',
                 color: '#fff'
               }}
-              title="Ganti foto profil"
             >
               {loadingAvatar
-                ? <span style={{ fontSize: 8 }}>...</span>
+                ? <span style={{ fontSize: 7, lineHeight: 1 }}>...</span>
                 : <Camera size={11}/>
               }
             </button>
+
             <input
               ref={fileInputRef}
               type="file"
@@ -188,7 +169,7 @@ const ProfilPage = memo(() => {
             />
           </div>
 
-          {/* Nama + Role */}
+          {/* Nama & Role */}
           <div style={{ flex: 1, minWidth: 0 }}>
             {editNama ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -196,6 +177,7 @@ const ProfilPage = memo(() => {
                   value={namaBaru}
                   onChange={e => setNamaBaru(e.target.value)}
                   autoFocus
+                  onKeyDown={e => { if (e.key === 'Enter') handleSaveNama() }}
                   style={{
                     background: 'var(--color-surface-2)',
                     border: '1px solid var(--color-primary)',
@@ -206,7 +188,6 @@ const ProfilPage = memo(() => {
                     fontFamily: 'var(--font-body)',
                     outline: 'none', width: '100%'
                   }}
-                  onKeyDown={e => { if (e.key === 'Enter') handleSaveNama() }}
                 />
                 {errNama && (
                   <p style={{ fontSize: '0.7rem', color: 'var(--color-error)', margin: 0 }}>
@@ -222,9 +203,12 @@ const ProfilPage = memo(() => {
                       background: 'var(--color-primary)', color: '#fff',
                       border: 'none', borderRadius: 'var(--radius-md)',
                       padding: '0.3rem 0.75rem', fontSize: '0.75rem',
-                      fontWeight: 600, cursor: 'pointer'
-                    }}>
-                    <Check size={12}/> {loadingNama ? 'Menyimpan...' : 'Simpan'}
+                      fontWeight: 600, cursor: 'pointer',
+                      fontFamily: 'var(--font-body)'
+                    }}
+                  >
+                    <Check size={12}/>
+                    {loadingNama ? 'Menyimpan...' : 'Simpan'}
                   </button>
                   <button
                     onClick={() => { setEditNama(false); setNamaBaru(user.nama); setErrNama('') }}
@@ -233,15 +217,19 @@ const ProfilPage = memo(() => {
                       background: 'transparent', color: 'var(--color-text-muted)',
                       border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
                       padding: '0.3rem 0.6rem', fontSize: '0.75rem',
-                      cursor: 'pointer'
-                    }}>
+                      cursor: 'pointer', fontFamily: 'var(--font-body)'
+                    }}
+                  >
                     <X size={12}/> Batal
                   </button>
                 </div>
               </div>
             ) : (
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center',
+                  gap: 6, flexWrap: 'wrap', marginBottom: 4
+                }}>
                   <span style={{
                     fontWeight: 700, fontSize: '1rem',
                     color: 'var(--color-text)',
@@ -251,13 +239,12 @@ const ProfilPage = memo(() => {
                   </span>
                   <button
                     onClick={() => { setEditNama(true); setNamaBaru(user.nama) }}
+                    title="Edit nama"
                     style={{
-                      background: 'none', border: 'none',
-                      cursor: 'pointer', padding: 3,
-                      color: 'var(--color-text-faint)',
+                      background: 'none', border: 'none', padding: 3,
+                      cursor: 'pointer', color: 'var(--color-text-faint)',
                       display: 'flex', alignItems: 'center'
                     }}
-                    title="Edit nama"
                   >
                     <Pencil size={13}/>
                   </button>
@@ -275,7 +262,7 @@ const ProfilPage = memo(() => {
         {errAvatar && (
           <p style={{
             fontSize: '0.72rem', color: 'var(--color-error)',
-            marginTop: '0.5rem', marginBottom: 0
+            marginTop: '0.6rem', marginBottom: 0
           }}>
             {errAvatar}
           </p>
@@ -290,21 +277,23 @@ const ProfilPage = memo(() => {
         padding: '1rem 1.25rem', marginBottom: '0.75rem'
       }}>
         <p style={{
-          fontSize: '0.72rem', fontWeight: 600,
-          letterSpacing: '0.06em', textTransform: 'uppercase',
+          fontSize: '0.68rem', fontWeight: 700,
+          letterSpacing: '0.07em', textTransform: 'uppercase',
           color: 'var(--color-text-muted)', marginBottom: '0.85rem'
         }}>
           Informasi Akun
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {[
-            { icon: <User size={15}/>,   label: 'Nama',   value: user.nama },
-            { icon: <Mail size={15}/>,   label: 'Email',  value: user.email },
-            { icon: <Phone size={15}/>,  label: 'No. HP', value: user.noHp },
-            { icon: <Shield size={15}/>, label: 'Role',   value: user.role },
+            { icon: <User size={15}/>,   label: 'Nama',   value: user.nama   },
+            { icon: <Mail size={15}/>,   label: 'Email',  value: user.email  },
+            { icon: <Phone size={15}/>,  label: 'No. HP', value: user.noHp   },
+            { icon: <Shield size={15}/>, label: 'Role',   value: user.role   },
           ].map((item, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{ color: 'var(--color-gold)', flexShrink: 0 }}>{item.icon}</div>
+              <div style={{ color: 'var(--color-gold)', flexShrink: 0 }}>
+                {item.icon}
+              </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', margin: 0 }}>
                   {item.label}
@@ -359,7 +348,7 @@ const ProfilPage = memo(() => {
         </div>
       )}
 
-      {/* ── Logout ── */}
+      {/* ── Tombol Logout ── */}
       <button
         onClick={() => setLogoutModal(true)}
         style={{
@@ -367,22 +356,27 @@ const ProfilPage = memo(() => {
           background: 'rgba(161,44,123,0.12)',
           border: '1px solid rgba(161,44,123,0.25)',
           borderRadius: 'var(--radius-xl)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'center', gap: 8,
           fontSize: '0.875rem', fontWeight: 700,
           color: 'var(--color-error)', cursor: 'pointer',
           fontFamily: 'var(--font-body)'
-        }}>
+        }}
+      >
         <LogOut size={17}/>
         Keluar dari Akun
       </button>
 
-      {/* ── Modal Logout ── */}
+      {/* ── Modal Konfirmasi Logout ── */}
       <Modal
         isOpen={logoutModal}
         onClose={() => setLogoutModal(false)}
         title="Konfirmasi Logout"
       >
-        <p style={{ color: 'var(--color-text-muted)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+        <p style={{
+          color: 'var(--color-text-muted)',
+          marginBottom: '1.5rem', fontSize: '0.9rem'
+        }}>
           Apakah kamu yakin ingin keluar dari akun{' '}
           <strong style={{ color: 'var(--color-text)' }}>{user.nama}</strong>?
         </p>
@@ -396,6 +390,7 @@ const ProfilPage = memo(() => {
           </Button>
         </div>
       </Modal>
+
     </main>
   )
 })
