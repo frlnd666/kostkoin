@@ -3,12 +3,21 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  updateProfile,
   type User as FirebaseUser,
 } from 'firebase/auth'
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore'
+import {
+  doc, setDoc, getDoc,
+  serverTimestamp, updateDoc,
+} from 'firebase/firestore'
+import {
+  getStorage, ref,
+  uploadBytes, getDownloadURL,
+} from 'firebase/storage'
 import { auth, db } from './firebase'
 import type { User, UserRole } from '../types/user'
 
+// ── Register ────────────────────────────────────────────────
 export const registerUser = async (
   email:    string,
   password: string,
@@ -36,6 +45,7 @@ export const registerUser = async (
   return userData
 }
 
+// ── Login ───────────────────────────────────────────────────
 export const loginUser = async (
   email:    string,
   password: string
@@ -48,19 +58,51 @@ export const loginUser = async (
   return snap.data() as User
 }
 
+// ── Logout ──────────────────────────────────────────────────
 export const logoutUser = async (): Promise<void> => {
   await signOut(auth)
 }
 
+// ── Get User Data ───────────────────────────────────────────
 export const getUserData = async (uid: string): Promise<User | null> => {
   const snap = await getDoc(doc(db, 'users', uid))
   if (!snap.exists()) return null
   return snap.data() as User
 }
 
+// ── Update Nama ─────────────────────────────────────────────
+export const updateUserName = async (nama: string): Promise<void> => {
+  const user = auth.currentUser
+  if (!user) throw new Error('User tidak ditemukan')
+
+  await updateProfile(user, { displayName: nama })
+  await updateDoc(doc(db, 'users', user.uid), { nama })
+}
+
+// ── Upload & Update Avatar ───────────────────────────────────
+export const updateUserAvatar = async (file: File): Promise<string> => {
+  const user    = auth.currentUser
+  const storage = getStorage()
+  if (!user) throw new Error('User tidak ditemukan')
+
+  // Validasi ukuran maks 2MB
+  if (file.size > 2 * 1024 * 1024) {
+    throw new Error('Ukuran foto maksimal 2MB')
+  }
+
+  const storageRef = ref(storage, `avatars/${user.uid}`)
+  await uploadBytes(storageRef, file)
+  const photoURL = await getDownloadURL(storageRef)
+
+  await updateProfile(user, { photoURL })
+  await updateDoc(doc(db, 'users', user.uid), { photoURL })
+
+  return photoURL
+}
+
+// ── Auth State Listener ──────────────────────────────────────
 export const onAuthChange = (
   callback: (user: FirebaseUser | null) => void
 ) => {
   return onAuthStateChanged(auth, callback)
 }
- 
