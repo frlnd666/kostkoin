@@ -1,12 +1,3 @@
 {
-  "installCommand": "npm install --legacy-peer-deps",
-  "rewrites": [
-    { "source": "/og-image.jpg",       "destination": "/og-image.jpg" },
-    { "source": "/favicon.ico",        "destination": "/favicon.ico" },
-    { "source": "/favicon.svg",        "destination": "/favicon.svg" },
-    { "source": "/icons.svg",          "destination": "/icons.svg" },
-    { "source": "/pwa-192x192.png",    "destination": "/pwa-192x192.png" },
-    { "source": "/pwa-512x512.png",    "destination": "/pwa-512x512.png" },
-    { "source": "/(.*)",               "destination": "/index.html" }
-  ]
+  "installCommand": "npm install --legacy-peer-deps"
 }
