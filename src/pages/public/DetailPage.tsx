@@ -28,16 +28,17 @@ const DetailPage = memo(() => {
 
   const handleShare = async () => {
   const url = window.location.href
-  const teks = `🏠 *${listing?.nama}*\n📍 ${listing?.alamat}, ${listing?.kota}\n💰 ${formatRupiah(listing?.harga ?? 0)}/bulan\n\nCek di KostKoin 👇\n${url}`
+  const teks = `🏠 *${listing?.nama}*\n📍 ${listing?.alamat}, ${listing?.kota}\n💰 ${formatRupiah(listing?.harga ?? 0)}/bulan\n\nCek di KostKoin 👇`
 
   if (navigator.share) {
     await navigator.share({
       title: listing?.nama ?? 'KostKoin',
       text:  teks,
-      url,
+      url,           // ← URL dikirim di sini, JANGAN masukkan ke dalam teks
     })
   } else {
-    await navigator.clipboard.writeText(`${teks}`)
+    // Fallback: copy teks + url sekaligus
+    await navigator.clipboard.writeText(`${teks}\n${url}`)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
