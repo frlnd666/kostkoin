@@ -1,20 +1,18 @@
 import { memo, useEffect, useState } from 'react'
-import { useNavigate }               from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Search, SlidersHorizontal, MapPin } from 'lucide-react'
-import Card    from '../../components/ui/Card'
 import Spinner from '../../components/ui/Spinner'
-import Badge   from '../../components/ui/Badge'
+import ListingCard from '../../components/ListingCard'
 import { getApprovedListings } from '../../services/listingService'
-import type { Listing }        from '../../types/listing'
-import { formatRupiah }        from '../../utils/format'
+import type { Listing } from '../../types/listing'
 
 const ListingPage = memo(() => {
-  const navigate                    = useNavigate()
-  const [listings, setListings]     = useState<Listing[]>([])
-  const [filtered, setFiltered]     = useState<Listing[]>([])
-  const [loading, setLoading]       = useState(true)
-  const [search, setSearch]         = useState('')
-  const [kota, setKota]             = useState('')
+  const navigate                = useNavigate()
+  const [listings, setListings] = useState<Listing[]>([])
+  const [filtered, setFiltered] = useState<Listing[]>([])
+  const [loading, setLoading]   = useState(true)
+  const [search, setSearch]     = useState('')
+  const [kota, setKota]         = useState('')
 
   useEffect(() => {
     getApprovedListings()
@@ -37,87 +35,121 @@ const ListingPage = memo(() => {
   const kotaList = [...new Set(listings.map(l => l.kota))].sort()
 
   return (
-    <main className="max-w-5xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-slate-900 mb-6">Cari Kost</h1>
+    <main style={{
+      background: 'var(--color-bg)',
+      color: 'var(--color-text)',
+      minHeight: '100vh',
+      padding: '1.5rem 1rem 4rem'
+    }}>
+      <div style={{ maxWidth: 960, margin: '0 auto' }}>
 
-      {/* Filter */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Cari nama atau alamat..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-          />
-        </div>
-        <div className="relative">
-          <SlidersHorizontal size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <select
-            value={kota}
-            onChange={e => setKota(e.target.value)}
-            className="pl-9 pr-8 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white appearance-none"
-          >
-            <option value="">Semua Kota</option>
-            {kotaList.map(k => <option key={k} value={k}>{k}</option>)}
-          </select>
-        </div>
-      </div>
+        {/* Header */}
+        <h1 style={{
+          fontFamily: 'var(--font-display)',
+          fontSize: 'clamp(1.4rem, 4vw, 1.75rem)',
+          fontWeight: 700, letterSpacing: '-0.025em',
+          color: 'var(--color-text)',
+          marginBottom: '1.25rem'
+        }}>
+          Cari Kost
+        </h1>
 
-      {/* Content */}
-      {loading ? (
-        <div className="flex justify-center py-20"><Spinner size="lg" /></div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-20 text-slate-400">
-          <p className="text-lg font-medium">Kost tidak ditemukan</p>
-          <p className="text-sm mt-1">Coba ubah filter pencarian</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map(listing => (
-            <Card
-              key={listing.id}
-              padding="none"
-              className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => navigate(`/listing/${listing.id}`)}
+        {/* Filter Bar */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.5rem' }}>
+
+          {/* Search input */}
+          <div style={{ position: 'relative', flex: 1 }}>
+            <Search size={14} style={{
+              position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
+              color: 'var(--color-text-faint)', pointerEvents: 'none'
+            }}/>
+            <input
+              type="text"
+              placeholder="Cari nama atau alamat..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{
+                width: '100%',
+                paddingLeft: '2.25rem', paddingRight: '1rem',
+                paddingTop: '0.6rem', paddingBottom: '0.6rem',
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-lg)',
+                fontSize: '0.85rem',
+                color: 'var(--color-text)',
+                fontFamily: 'var(--font-body)',
+                outline: 'none',
+                transition: 'border-color 180ms ease',
+              }}
+              onFocus={e => e.target.style.borderColor = 'rgba(74,143,154,0.35)'}
+              onBlur={e => e.target.style.borderColor = 'var(--color-border)'}
+            />
+          </div>
+
+          {/* Kota select */}
+          <div style={{ position: 'relative' }}>
+            <SlidersHorizontal size={14} style={{
+              position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
+              color: 'var(--color-text-faint)', pointerEvents: 'none'
+            }}/>
+            <select
+              value={kota}
+              onChange={e => setKota(e.target.value)}
+              style={{
+                width: '100%',
+                paddingLeft: '2.25rem', paddingRight: '1rem',
+                paddingTop: '0.6rem', paddingBottom: '0.6rem',
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-lg)',
+                fontSize: '0.85rem',
+                color: kota ? 'var(--color-text)' : 'var(--color-text-muted)',
+                fontFamily: 'var(--font-body)',
+                outline: 'none', appearance: 'none',
+              }}
             >
-              {/* Foto */}
-              <div className="h-44 bg-slate-100 overflow-hidden">
-                {listing.foto?.[0] ? (
-                  <img
-                    src={listing.foto[0]}
-                    alt={listing.nama}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-300 text-4xl">
-                    🏠
-                  </div>
-                )}
-              </div>
-
-              {/* Info */}
-              <div className="p-4">
-                <h3 className="font-semibold text-slate-900 mb-1 truncate">{listing.nama}</h3>
-                <div className="flex items-center gap-1 text-slate-500 text-xs mb-2">
-                  <MapPin size={12} />
-                  <span className="truncate">{listing.alamat}, {listing.kota}</span>
-                </div>
-                <div className="flex items-center justify-between mt-3">
-                  <div>
-                    <span className="text-amber-500 font-bold text-base">
-                      {formatRupiah(listing.harga)}
-                    </span>
-                    <span className="text-slate-400 text-xs">/bulan</span>
-                  </div>
-                  <Badge variant="success">Tersedia</Badge>
-                </div>
-              </div>
-            </Card>
-          ))}
+              <option value="">Semua Kota</option>
+              {kotaList.map(k => <option key={k} value={k}>{k}</option>)}
+            </select>
+          </div>
         </div>
-      )}
+
+        {/* Jumlah hasil */}
+        {!loading && (
+          <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
+            {filtered.length} kost ditemukan
+          </p>
+        )}
+
+        {/* Content */}
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '5rem 0' }}>
+            <Spinner size="lg" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div style={{
+            textAlign: 'center', padding: '5rem 1rem',
+            color: 'var(--color-text-muted)'
+          }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '1rem', opacity: 0.3 }}>🏠</div>
+            <p style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text)', marginBottom: '0.35rem' }}>
+              Kost tidak ditemukan
+            </p>
+            <p style={{ fontSize: '0.8rem' }}>Coba ubah filter pencarian</p>
+          </div>
+        ) : (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))',
+            gap: '0.85rem'
+          }}>
+            {filtered.map(listing => (
+              <ListingCard key={listing.id} listing={listing} />
+            ))}
+          </div>
+        )}
+
+      </div>
     </main>
   )
 })
