@@ -1,189 +1,206 @@
-import { memo, useEffect, useState } from 'react'
-import { Link, useNavigate }         from 'react-router-dom'
+import { memo } from 'react'
+import { Link } from 'react-router-dom'
 import { Search, MapPin, Shield, Star, ChevronRight } from 'lucide-react'
-import { getApprovedListings } from '../../services/listingService'
-import { formatRupiah }        from '../../utils/format'
-import type { Listing }        from '../../types/listing'
-
-const KOTA_BANTEN = [
-  'Kota Serang', 'Kota Tangerang', 'Kota Tangerang Selatan',
-  'Kota Cilegon', 'Kabupaten Serang', 'Kabupaten Tangerang',
-  'Kabupaten Lebak', 'Kabupaten Pandeglang',
-]
+import { APP_NAME, APP_TAGLINE } from '../../constants'
 
 const HomePage = memo(() => {
-  const navigate = useNavigate()
-  const [search, setSearch]       = useState('')
-  const [kota, setKota]           = useState('')
-  const [listings, setListings]   = useState<Listing[]>([])
-  const [loading, setLoading]     = useState(true)
-
-  useEffect(() => {
-    getApprovedListings()
-      .then(setListings)
-      .finally(() => setLoading(false))
-  }, [])
-
-  const handleSearch = () => {
-    const params = new URLSearchParams()
-    if (search) params.set('q', search)
-    if (kota)   params.set('kota', kota)
-    navigate(`/listing?${params.toString()}`)
-  }
-
-  const featured = listings.slice(0, 6)
-
   return (
-    <main className="bg-slate-50 min-h-screen">
+    <main style={{ background: 'var(--color-bg)', color: 'var(--color-text)', minHeight: '100vh' }}>
 
-      {/* ── Hero ── */}
-      <section className="bg-amber-400 px-4 pt-8 pb-16">
-        <div className="max-w-2xl mx-auto text-center mb-6">
-          <h1 className="text-3xl font-extrabold text-slate-900 mb-1">
-            Cari Kost di Banten
+      {/* ── HERO ── */}
+      <section style={{ background: 'var(--color-bg)', padding: '2.5rem 1rem 2rem' }}>
+        <div style={{ maxWidth: 560, margin: '0 auto', textAlign: 'center' }}>
+
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.09em',
+            textTransform: 'uppercase',
+            color: 'var(--color-primary)',
+            background: 'var(--color-primary-subtle)',
+            border: '1px solid var(--color-primary-border)',
+            padding: '0.28rem 0.75rem', borderRadius: 999,
+            marginBottom: '1.1rem'
+          }}>
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--color-primary)', display: 'inline-block' }}/>
+            Platform Kost Banten
+          </span>
+
+          <h1 style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 'clamp(2rem, 8vw, 2.75rem)',
+            fontWeight: 700, lineHeight: 1.08,
+            letterSpacing: '-0.03em',
+            color: 'var(--color-text)',
+            marginBottom: '0.85rem'
+          }}>
+            Cari Kost di{' '}
+            <em style={{ fontStyle: 'italic', color: 'var(--color-gold)' }}>Banten</em>
           </h1>
-          <p className="text-slate-700 text-sm">
-            Temukan kost & kontrakan terbaik, harga transparan, bayar online
-          </p>
-        </div>
 
-        {/* Search Box */}
-        <div className="max-w-xl mx-auto bg-white rounded-2xl shadow-lg p-3 flex flex-col sm:flex-row gap-2">
-          <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <p style={{
+            fontSize: '0.9rem',
+            color: 'var(--color-text-muted)',
+            lineHeight: 1.75,
+            maxWidth: '34ch',
+            margin: '0 auto 1.75rem'
+          }}>
+            {APP_TAGLINE}. Harga transparan, bayar online.
+          </p>
+
+          {/* Search Bar */}
+          <div style={{
+            display: 'flex', alignItems: 'center',
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '0.35rem 0.35rem 0.35rem 1rem',
+            marginBottom: '1rem'
+          }}>
+            <Search size={14} style={{ color: 'var(--color-text-faint)', flexShrink: 0 }}/>
             <input
-              type="text"
+              style={{
+                flex: 1, background: 'transparent', border: 'none', outline: 'none',
+                fontSize: '0.85rem', padding: '0.3rem 0.75rem',
+                color: 'var(--color-text)', fontFamily: 'var(--font-body)'
+              }}
               placeholder="Nama kost atau alamat..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-400"
             />
+            <Link to="/listing">
+              <button style={{
+                background: 'var(--color-primary)', color: '#fff',
+                border: 'none', borderRadius: 'var(--radius-md)',
+                padding: '0.5rem 1rem', fontSize: '0.8rem', fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap'
+              }}>
+                Cari Kost
+              </button>
+            </Link>
           </div>
-          <select
-            value={kota}
-            onChange={e => setKota(e.target.value)}
-            className="px-3 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
-          >
-            <option value="">Semua Kota</option>
-            {KOTA_BANTEN.map(k => <option key={k} value={k}>{k}</option>)}
-          </select>
-          <button
-            onClick={handleSearch}
-            className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
-          >
-            Cari
-          </button>
+
+          {/* CTA Buttons */}
+          <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center' }}>
+            <Link to="/listing">
+              <button style={{
+                background: 'var(--color-gold)', color: 'var(--color-text-inverse)',
+                border: 'none', borderRadius: 'var(--radius-lg)',
+                padding: '0.65rem 1.4rem', fontSize: '0.85rem', fontWeight: 700,
+                cursor: 'pointer', fontFamily: 'var(--font-body)'
+              }}>
+                Jelajahi Sekarang
+              </button>
+            </Link>
+            <Link to="/register">
+              <button style={{
+                background: 'transparent', color: 'var(--color-text-muted)',
+                border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)',
+                padding: '0.65rem 1.2rem', fontSize: '0.85rem', fontWeight: 500,
+                cursor: 'pointer', fontFamily: 'var(--font-body)'
+              }}>
+                Daftarkan Kost
+              </button>
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* ── Kota Populer ── */}
-      <section className="max-w-5xl mx-auto px-4 -mt-6 mb-8">
-        <div className="grid grid-cols-4 gap-2">
-          {KOTA_BANTEN.slice(0, 4).map(k => (
-            <button
-              key={k}
-              onClick={() => navigate(`/listing?kota=${encodeURIComponent(k)}`)}
-              className="bg-white rounded-xl shadow-sm p-3 text-center hover:shadow-md transition-shadow"
-            >
-              <MapPin size={20} className="text-amber-400 mx-auto mb-1" />
-              <p className="text-xs font-medium text-slate-700 leading-tight">
-                {k.replace('Kota ', '').replace('Kabupaten ', 'Kab. ')}
-              </p>
-            </button>
+      {/* ── KOTA PILIHAN ── */}
+      <section style={{ padding: '1.5rem 1rem' }}>
+        <div style={{ maxWidth: 560, margin: '0 auto' }}>
+          <div style={{ display: 'flex', gap: '0.6rem', overflowX: 'auto', paddingBottom: 4 }}>
+            {['Serang', 'Tangerang', 'Tangerang Selatan', 'Cilegon', 'Lebak'].map(kota => (
+              <Link key={kota} to={`/listing?kota=${kota}`} style={{ textDecoration: 'none', flexShrink: 0 }}>
+                <div style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                  padding: '0.65rem 1rem', borderRadius: 'var(--radius-lg)',
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  cursor: 'pointer', minWidth: 72
+                }}>
+                  <MapPin size={16} style={{ color: 'var(--color-gold)' }}/>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 500, color: 'var(--color-text)', whiteSpace: 'nowrap' }}>
+                    {kota}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── FITUR UNGGULAN ── */}
+      <section style={{ padding: '0.5rem 1rem 1.5rem' }}>
+        <div style={{ maxWidth: 560, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+          {[
+            { icon: <Star size={18}/>, title: 'Listing Terverifikasi', desc: 'Semua kost dicek & disetujui admin sebelum tayang' },
+            { icon: <Shield size={18}/>, title: 'Pembayaran Aman', desc: 'Transaksi terlindungi via Midtrans, uang aman' },
+            { icon: <MapPin size={18}/>, title: 'Fokus Banten', desc: 'Platform kost pertama khusus Provinsi Banten' },
+          ].map((f, i) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center', gap: '1rem',
+              padding: '0.9rem 1rem', borderRadius: 'var(--radius-xl)',
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)'
+            }}>
+              <div style={{
+                flexShrink: 0, width: 40, height: 40,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                borderRadius: 'var(--radius-lg)',
+                background: 'var(--color-gold-subtle)',
+                border: '1px solid var(--color-gold-border)',
+                color: 'var(--color-gold)'
+              }}>
+                {f.icon}
+              </div>
+              <div>
+                <div style={{
+                  fontSize: '0.88rem', fontWeight: 600,
+                  color: 'var(--color-text)',
+                  fontFamily: 'var(--font-display)',
+                  marginBottom: 2
+                }}>
+                  {f.title}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
+                  {f.desc}
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       </section>
 
-      {/* ── Listing Terbaru ── */}
-      <section className="max-w-5xl mx-auto px-4 mb-10">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-slate-900">Kost Tersedia</h2>
-          <Link to="/listing" className="text-amber-500 text-sm font-medium flex items-center gap-1">
-            Lihat Semua <ChevronRight size={14} />
-          </Link>
-        </div>
-
-        {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="bg-white rounded-xl overflow-hidden animate-pulse">
-                <div className="h-32 bg-slate-200" />
-                <div className="p-3">
-                  <div className="h-3 bg-slate-200 rounded mb-2 w-3/4" />
-                  <div className="h-3 bg-slate-200 rounded w-1/2" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : featured.length === 0 ? (
-          <div className="text-center py-12 text-slate-400">
-            <p>Belum ada listing tersedia</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {featured.map(listing => (
-              <div
-                key={listing.id}
-                onClick={() => navigate(`/listing/${listing.id}`)}
-                className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-              >
-                <div className="h-32 bg-slate-100 overflow-hidden">
-                  {listing.foto?.[0] ? (
-                    <img src={listing.foto[0]} alt={listing.nama} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-3xl">🏠</div>
-                  )}
-                </div>
-                <div className="p-3">
-                  <h3 className="font-semibold text-slate-900 text-sm truncate">{listing.nama}</h3>
-                  <div className="flex items-center gap-1 text-slate-400 text-xs mt-0.5">
-                    <MapPin size={10} />
-                    <span className="truncate">{listing.kota}</span>
-                  </div>
-                  <p className="text-amber-500 font-bold text-sm mt-1">
-                    {formatRupiah(listing.harga)}
-                    <span className="text-slate-400 font-normal text-xs">/bln</span>
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* ── Keunggulan ── */}
-      <section className="bg-white py-10 px-4 mb-8">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-lg font-bold text-slate-900 text-center mb-6">Kenapa KostKoin?</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[
-              { icon: <Star size={24} className="text-amber-400" />,   title: 'Listing Terverifikasi',  desc: 'Semua kost dicek & disetujui admin sebelum tayang' },
-              { icon: <Shield size={24} className="text-amber-400" />, title: 'Pembayaran Aman',        desc: 'Transaksi terlindungi via Midtrans, uang aman' },
-              { icon: <MapPin size={24} className="text-amber-400" />, title: 'Fokus Banten',           desc: 'Platform kost pertama khusus Provinsi Banten' },
-            ].map((f, i) => (
-              <div key={i} className="flex gap-3 p-4 rounded-xl bg-slate-50">
-                <div className="shrink-0 mt-0.5">{f.icon}</div>
-                <div>
-                  <h3 className="font-semibold text-slate-900 text-sm mb-0.5">{f.title}</h3>
-                  <p className="text-slate-500 text-xs">{f.desc}</p>
-                </div>
-              </div>
-            ))}
+      {/* ── CTA PEMILIK ── */}
+      <section style={{ padding: '0.5rem 1rem 2rem' }}>
+        <div style={{ maxWidth: 560, margin: '0 auto' }}>
+          <div style={{
+            borderRadius: 'var(--radius-xl)', padding: '2rem 1.5rem',
+            textAlign: 'center',
+            background: 'var(--color-surface-2)',
+            border: '1px solid var(--color-gold-border)'
+          }}>
+            <div style={{
+              fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.5rem',
+              fontFamily: 'var(--font-display)', color: 'var(--color-text)'
+            }}>
+              Punya Kost di Banten?
+            </div>
+            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '1.25rem' }}>
+              Daftarkan gratis, jangkau ribuan penyewa sekarang
+            </p>
+            <Link to="/register">
+              <button style={{
+                background: 'var(--color-gold)', color: 'var(--color-text-inverse)',
+                border: 'none', borderRadius: 'var(--radius-lg)',
+                padding: '0.7rem 1.5rem', fontSize: '0.875rem', fontWeight: 700,
+                cursor: 'pointer', fontFamily: 'var(--font-body)',
+                display: 'inline-flex', alignItems: 'center', gap: 6
+              }}>
+                Daftarkan Properti
+                <ChevronRight size={15}/>
+              </button>
+            </Link>
           </div>
         </div>
-      </section>
-
-      {/* ── CTA Pemilik ── */}
-      <section className="mx-4 mb-10 bg-amber-400 rounded-2xl p-6 max-w-5xl md:mx-auto text-center">
-        <h2 className="text-lg font-bold text-slate-900 mb-1">Punya Kost di Banten?</h2>
-        <p className="text-slate-700 text-sm mb-4">Daftarkan gratis, jangkau ribuan penyewa sekarang</p>
-        <Link
-          to="/register"
-          className="inline-block bg-slate-900 text-white font-semibold px-6 py-2.5 rounded-xl text-sm hover:bg-slate-800 transition-colors"
-        >
-          Daftarkan Properti
-        </Link>
       </section>
 
     </main>
