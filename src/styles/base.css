@@ -40,3 +40,9 @@ button { cursor: pointer; background: none; border: none; }
     transition-duration: 0.01ms !important;
   }
 }
+/* Override Tailwind Preflight untuk font */
+body {
+  font-family: var(--font-body) !important;
+  background-color: var(--color-bg) !important;
+  color: var(--color-text) !important;
+}
