@@ -95,7 +95,7 @@ export const updateUserAvatar = async (file: File): Promise<string> => {
   const photoURL = await getDownloadURL(storageRef)
 
   await updateProfile(user, { photoURL })
-  await updateDoc(doc(db, 'users', user.uid), { photoURL })
+  await updateDoc(doc(db, 'users', user.uid), { fotoUrl: photoURL })
 
   return photoURL
 }
