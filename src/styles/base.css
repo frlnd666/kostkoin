@@ -46,3 +46,114 @@ body {
   background-color: var(--color-bg) !important;
   color: var(--color-text) !important;
 }
+/* ══════════════════════════════════════
+   GLOBAL OVERRIDE — Komponen UI Library
+   Fix: Card putih & teks tidak terbaca
+══════════════════════════════════════ */
+
+/* Judul halaman (h1) yang masih pakai warna teal/slate */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-text) !important;
+}
+
+/* Card UI component — override background putih */
+.bg-white,
+[class*="bg-white"] {
+  background-color: var(--color-surface) !important;
+}
+
+.bg-slate-50,
+.bg-gray-50 {
+  background-color: var(--color-surface-2) !important;
+}
+
+.bg-slate-100,
+.bg-gray-100 {
+  background-color: var(--color-surface-offset) !important;
+}
+
+/* Border light → dark */
+.border-slate-100,
+.border-slate-200,
+.border-gray-100,
+.border-gray-200 {
+  border-color: var(--color-border) !important;
+}
+
+/* Teks gelap → terang */
+.text-slate-900,
+.text-gray-900,
+.text-black {
+  color: var(--color-text) !important;
+}
+
+.text-slate-700,
+.text-gray-700 {
+  color: var(--color-text) !important;
+}
+
+.text-slate-500,
+.text-slate-400,
+.text-gray-500,
+.text-gray-400 {
+  color: var(--color-text-muted) !important;
+}
+
+.text-slate-300,
+.text-gray-300 {
+  color: var(--color-text-faint) !important;
+}
+
+/* Tombol amber/gold — seragamkan */
+.bg-amber-400,
+.bg-amber-500,
+.hover\:bg-amber-500:hover {
+  background-color: var(--color-gold) !important;
+  color: var(--color-text-inverse) !important;
+}
+
+.text-amber-400,
+.text-amber-500 {
+  color: var(--color-gold) !important;
+}
+
+/* Badge success (hijau) → teal */
+.bg-green-100,
+.bg-emerald-100 {
+  background-color: var(--color-primary-subtle) !important;
+}
+.text-green-700,
+.text-green-800,
+.text-emerald-700 {
+  color: var(--color-primary) !important;
+}
+
+/* Input field */
+input, select, textarea {
+  background-color: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text) !important;
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-text-faint) !important;
+}
+
+/* Tombol merah logout — pertahankan tapi gelap */
+.bg-red-500,
+.bg-red-600 {
+  background-color: #7a2a2a !important;
+}
+
+/* Ring focus amber → teal */
+.focus\:ring-amber-400:focus,
+.focus\:ring-2:focus {
+  --tw-ring-color: rgba(74, 143, 154, 0.4) !important;
+}
+
+/* Divider */
+hr,
+.divide-slate-100 > * + *,
+.divide-gray-100 > * + * {
+  border-color: var(--color-divider) !important;
+}
