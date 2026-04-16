@@ -1,5 +1,4 @@
 import { memo, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Search, SlidersHorizontal } from 'lucide-react'
 import Spinner from '../../components/ui/Spinner'
 import ListingCard from '../../components/ListingCard'
@@ -7,7 +6,7 @@ import { getApprovedListings } from '../../services/listingService'
 import type { Listing } from '../../types/listing'
 
 const ListingPage = memo(() => {
-  const navigate                = useNavigate()
+  
   const [listings, setListings] = useState<Listing[]>([])
   const [filtered, setFiltered] = useState<Listing[]>([])
   const [loading, setLoading]   = useState(true)
