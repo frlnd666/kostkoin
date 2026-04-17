@@ -4,13 +4,16 @@ import {
   onSnapshot, serverTimestamp, Timestamp,
   writeBatch
 } from 'firebase/firestore'
-import { db }                          from '../config/firebase'
+import { db }                                from '../config/firebase'
 import type { Booking, BookingStatus, TipeKamar, PembayaranInfo } from '../types/booking'
-import { sendNotification, notifTemplates } from './notificationService'
+import type { Listing, TipeHarga }           from '../types/listing'
+import { sendNotification, notifTemplates }  from './notificationService'
 
 const COL = 'bookings'
 
-// ── Types Input ───────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// TYPES INPUT
+// ─────────────────────────────────────────────────────────────
 export interface CreateBookingInput {
   listingId:      string
   listingNama:    string
@@ -29,11 +32,13 @@ export interface CreateBookingInput {
   catatanPenyewa: string
 }
 
-// ── Kalkulasi Harga ───────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// KALKULASI & LABEL
+// ─────────────────────────────────────────────────────────────
 export const hitungTanggalSelesai = (
-  mulai:     Date,
-  tipe:      TipeKamar,
-  durasi:    number
+  mulai:  Date,
+  tipe:   TipeKamar,
+  durasi: number
 ): Date => {
   const selesai = new Date(mulai)
   if (tipe === 'harian')   selesai.setDate(selesai.getDate() + durasi)
@@ -59,7 +64,36 @@ export const satuanTipe = (tipe: TipeKamar): string => ({
   bulanan:  'bulan',
 })[tipe]
 
-// ── Create Booking (+ notif ke penyewa & pemilik) ─────────────
+// ─────────────────────────────────────────────────────────────
+// MAPPING TipeHarga (listing) ↔ TipeKamar (booking)
+// ─────────────────────────────────────────────────────────────
+export const tipeHargaToTipeKamar = (t: TipeHarga): TipeKamar =>
+  ({ perhari: 'harian', perminggu: 'mingguan', perbulan: 'bulanan' } as Record<TipeHarga, TipeKamar>)[t] ?? 'bulanan'
+
+export const tipeKamarToTipeHarga = (t: TipeKamar): TipeHarga =>
+  ({ harian: 'perhari', mingguan: 'perminggu', bulanan: 'perbulan' } as Record<TipeKamar, TipeHarga>)[t] ?? 'perbulan'
+
+// Ambil harga satuan dari listing berdasarkan tipe booking
+export const getHargaSatuan = (listing: Listing, tipe: TipeKamar): number => {
+  if (tipe === 'harian')   return listing.hargaPerHari   ?? listing.harga
+  if (tipe === 'mingguan') return listing.hargaPerMinggu ?? listing.harga * 4
+  if (tipe === 'bulanan')  return listing.hargaPerBulan  ?? listing.harga
+  return listing.harga
+}
+
+// Tipe kamar yang tersedia di listing ini
+export const getTipeKamarTersedia = (listing: Listing): TipeKamar[] => {
+  const tipes: TipeKamar[] = []
+  if (listing.hargaPerHari   || listing.tipeHarga === 'perhari')   tipes.push('harian')
+  if (listing.hargaPerMinggu || listing.tipeHarga === 'perminggu') tipes.push('mingguan')
+  if (listing.hargaPerBulan  || listing.tipeHarga === 'perbulan')  tipes.push('bulanan')
+  if (tipes.length === 0) tipes.push(tipeHargaToTipeKamar(listing.tipeHarga))
+  return tipes
+}
+
+// ─────────────────────────────────────────────────────────────
+// CREATE BOOKING
+// ─────────────────────────────────────────────────────────────
 export const createBooking = async (
   input: CreateBookingInput
 ): Promise<string> => {
@@ -76,14 +110,12 @@ export const createBooking = async (
 
   const bookingId = ref.id
 
-  // Notif ke penyewa
   const tmplPenyewa = notifTemplates.bookingDibuat(input.listingNama, bookingId)
   await sendNotification(
     input.penyewaId, 'booking_dibuat',
     tmplPenyewa.title, tmplPenyewa.body, tmplPenyewa.data
   )
 
-  // Notif ke pemilik
   const tmplPemilik = notifTemplates.bookingMasuk(
     input.penyewaNama, input.listingNama, bookingId
   )
@@ -95,70 +127,67 @@ export const createBooking = async (
   return bookingId
 }
 
-// ── Get By ID ─────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// READ
+// ─────────────────────────────────────────────────────────────
 export const getBookingById = async (id: string): Promise<Booking | null> => {
   const snap = await getDoc(doc(db, COL, id))
   if (!snap.exists()) return null
   return { id: snap.id, ...snap.data() } as Booking
 }
 
-// ── Get By Penyewa ────────────────────────────────────────────
-export const getBookingsByPenyewa = async (
-  penyewaId: string
-): Promise<Booking[]> => {
-  const q    = query(
+export const getBookingsByPenyewa = async (penyewaId: string): Promise<Booking[]> => {
+  const snap = await getDocs(query(
     collection(db, COL),
     where('penyewaId', '==', penyewaId),
     orderBy('createdAt', 'desc')
-  )
-  const snap = await getDocs(q)
+  ))
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as Booking))
 }
 
-// ── Get By Pemilik ────────────────────────────────────────────
-export const getBookingsByPemilik = async (
-  pemilikId: string
-): Promise<Booking[]> => {
-  const q    = query(
+export const getBookingsByPemilik = async (pemilikId: string): Promise<Booking[]> => {
+  const snap = await getDocs(query(
     collection(db, COL),
     where('pemilikId', '==', pemilikId),
     orderBy('createdAt', 'desc')
-  )
-  const snap = await getDocs(q)
+  ))
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as Booking))
 }
 
-// ── Realtime listener (pemilik dashboard) ─────────────────────
+// ─────────────────────────────────────────────────────────────
+// REALTIME LISTENERS
+// ─────────────────────────────────────────────────────────────
 export const listenBookingsByPemilik = (
   pemilikId: string,
   callback:  (bookings: Booking[]) => void
-) => {
-  const q = query(
-    collection(db, COL),
-    where('pemilikId', '==', pemilikId),
-    orderBy('createdAt', 'desc')
+) =>
+  onSnapshot(
+    query(collection(db, COL), where('pemilikId', '==', pemilikId), orderBy('createdAt', 'desc')),
+    snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as Booking)))
   )
-  return onSnapshot(q, snap => {
-    callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as Booking)))
-  })
-}
 
-// ── Realtime listener (penyewa riwayat) ───────────────────────
 export const listenBookingsByPenyewa = (
   penyewaId: string,
   callback:  (bookings: Booking[]) => void
-) => {
-  const q = query(
-    collection(db, COL),
-    where('penyewaId', '==', penyewaId),
-    orderBy('createdAt', 'desc')
+) =>
+  onSnapshot(
+    query(collection(db, COL), where('penyewaId', '==', penyewaId), orderBy('createdAt', 'desc')),
+    snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as Booking)))
   )
-  return onSnapshot(q, snap => {
-    callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as Booking)))
-  })
-}
 
-// ── Update Status (generic) ───────────────────────────────────
+// Listener 1 booking spesifik (untuk halaman detail booking)
+export const listenBookingById = (
+  bookingId: string,
+  callback:  (booking: Booking | null) => void
+) =>
+  onSnapshot(doc(db, COL, bookingId), snap => {
+    if (!snap.exists()) { callback(null); return }
+    callback({ id: snap.id, ...snap.data() } as Booking)
+  })
+
+// ─────────────────────────────────────────────────────────────
+// UPDATE STATUS (generic)
+// ─────────────────────────────────────────────────────────────
 export const updateBookingStatus = async (
   id:     string,
   status: BookingStatus,
@@ -171,27 +200,30 @@ export const updateBookingStatus = async (
   })
 }
 
-// ── Konfirmasi Pembayaran (penyewa upload bukti) ──────────────
+// ─────────────────────────────────────────────────────────────
+// AKSI SPESIFIK
+// ─────────────────────────────────────────────────────────────
+
+// Penyewa upload bukti bayar
 export const konfirmasiPembayaran = async (
   bookingId:  string,
   booking:    Booking,
   pembayaran: PembayaranInfo
 ): Promise<void> => {
   await updateDoc(doc(db, COL, bookingId), {
-    status:     'sudah_dibayar' as BookingStatus,
+    status:    'sudah_dibayar' as BookingStatus,
     pembayaran,
-    updatedAt:  serverTimestamp(),
+    updatedAt: serverTimestamp(),
   })
 
-  // Notif ke penyewa
-  const tmplPenyewa = notifTemplates.pembayaranLunas(booking.listingNama, bookingId)
+  const tmpl = notifTemplates.pembayaranLunas(booking.listingNama, bookingId)
   await sendNotification(
     booking.penyewaId, 'pembayaran_lunas',
-    tmplPenyewa.title, tmplPenyewa.body, tmplPenyewa.data
+    tmpl.title, tmpl.body, tmpl.data
   )
 }
 
-// ── Konfirmasi Check-in (pemilik konfirmasi) ──────────────────
+// Pemilik konfirmasi check-in
 export const konfirmasiCheckin = async (
   bookingId: string,
   booking:   Booking
@@ -201,7 +233,6 @@ export const konfirmasiCheckin = async (
     updatedAt: serverTimestamp(),
   })
 
-  // Notif ke penyewa
   const tmpl = notifTemplates.checkinDikonfirmasi(booking.listingNama, bookingId)
   await sendNotification(
     booking.penyewaId, 'checkin_dikonfirmasi',
@@ -209,7 +240,7 @@ export const konfirmasiCheckin = async (
   )
 }
 
-// ── Selesaikan Booking (pemilik atau otomatis) ────────────────
+// Pemilik / sistem selesaikan booking
 export const selesaikanBooking = async (
   bookingId: string,
   booking:   Booking
@@ -226,7 +257,7 @@ export const selesaikanBooking = async (
   )
 }
 
-// ── Batalkan Booking ──────────────────────────────────────────
+// Batal oleh penyewa atau pemilik
 export const batalkanBooking = async (
   bookingId:   string,
   booking:     Booking,
@@ -239,7 +270,6 @@ export const batalkanBooking = async (
     updatedAt:   serverTimestamp(),
   })
 
-  // Notif ke pihak yang tidak membatalkan
   const targetId = batalOleh === 'penyewa' ? booking.pemilikId : booking.penyewaId
   await sendNotification(
     targetId, 'booking_hangus',
@@ -249,30 +279,25 @@ export const batalkanBooking = async (
   )
 }
 
-// ── Hanguskan Booking (tidak datang > 24 jam) ─────────────────
+// Hangus: tidak datang lebih dari 24 jam setelah tanggal mulai
 export const hanguskanBooking = async (
   bookingId: string,
   booking:   Booking
 ): Promise<void> => {
   const batch = writeBatch(db)
-
-  // Update booking → hangus
   batch.update(doc(db, COL, bookingId), {
     status:    'hangus' as BookingStatus,
     updatedAt: serverTimestamp(),
   })
-
   await batch.commit()
 
-  // Notif ke penyewa
   const tmplPenyewa = notifTemplates.bookingHangus(booking.listingNama, bookingId)
   await sendNotification(
     booking.penyewaId, 'booking_hangus',
     tmplPenyewa.title, tmplPenyewa.body, tmplPenyewa.data
   )
 
-  // Notif ke pemilik (kompensasi hangus)
-  const kompensasi = Math.floor(booking.totalHarga * 0.4)
+  const kompensasi  = Math.floor(booking.totalHarga * 0.4)
   const tmplPemilik = notifTemplates.danaHangus(kompensasi, bookingId)
   await sendNotification(
     booking.pemilikId, 'dana_hangus_masuk',
@@ -280,7 +305,9 @@ export const hanguskanBooking = async (
   )
 }
 
-// ── Helper: Label Status ──────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// HELPERS: STATUS
+// ─────────────────────────────────────────────────────────────
 export const labelStatus = (status: BookingStatus): string => ({
   menunggu_pembayaran: 'Menunggu Pembayaran',
   sudah_dibayar:       'Sudah Dibayar',
@@ -301,21 +328,19 @@ export const colorStatus = (status: BookingStatus): string => ({
   hangus:              'text-orange-600 bg-orange-50',
 })[status] ?? 'text-slate-600 bg-slate-100'
 
-// ── Helper: Format Tanggal ────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// HELPERS: FORMAT TANGGAL
+// ─────────────────────────────────────────────────────────────
 export const formatTanggal = (ts: Timestamp | null | undefined): string => {
   if (!ts) return '-'
   return ts.toDate().toLocaleDateString('id-ID', {
-    day:   '2-digit',
-    month: 'long',
-    year:  'numeric',
+    day: '2-digit', month: 'long', year: 'numeric',
   })
 }
 
 export const formatTanggalPendek = (ts: Timestamp | null | undefined): string => {
   if (!ts) return '-'
   return ts.toDate().toLocaleDateString('id-ID', {
-    day:   '2-digit',
-    month: 'short',
-    year:  'numeric',
+    day: '2-digit', month: 'short', year: 'numeric',
   })
 }
