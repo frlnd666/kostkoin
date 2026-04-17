@@ -1,41 +1,53 @@
-export type BookingStatus = 'pending' | 'paid' | 'active' | 'done' | 'cancelled'
+import type { Timestamp } from 'firebase/firestore'
 
-export type TipeHarga = 'perhari' | 'perbulan'
+export type TipeKamar  = 'harian' | 'mingguan' | 'bulanan'
+
+export type BookingStatus =
+  | 'menunggu_pembayaran'
+  | 'sudah_dibayar'
+  | 'dikonfirmasi'
+  | 'aktif'
+  | 'selesai'
+  | 'dibatalkan'
+  | 'hangus'
+
+export interface PembayaranInfo {
+  metode:    string       // 'transfer_bank' | 'ewallet' | 'tunai'
+  buktiUrl:  string       // URL foto bukti transfer
+  dibayarAt: Timestamp
+}
 
 export interface Booking {
   id:             string
   listingId:      string
   listingNama:    string
   listingAlamat:  string
-
-  // Penyewa
   penyewaId:      string
   penyewaNama:    string
   penyewaEmail:   string
-  penyewaNoHp:    string
-
-  // Pemilik
   pemilikId:      string
+  pemilikNama:    string
 
-  // Harga & Durasi
-  harga:          number        // harga dasar dari listing (per hari/bulan)
-  tipeHarga:      TipeHarga     // 'perhari' | 'perbulan'
-  durasi:         number        // jumlah hari atau bulan
+  tipeKamar:      TipeKamar
+  tanggalMulai:   Timestamp
+  tanggalSelesai: Timestamp
+  durasi:         number      // jumlah hari/minggu/bulan
+  hargaSatuan:    number      // harga per periode
+  totalHarga:     number      // hargaSatuan × durasi
 
-  // Rincian biaya (transparan)
-  subtotal:       number        // harga × durasi
-  biayaLayanan:   number        // 10% dari subtotal
-  biayaMidtrans:  number        // Rp 4.000
-  totalHarga:     number        // subtotal + biayaLayanan + biayaMidtrans
-
-  // Tanggal
-  tanggalMulai:   string        // YYYY-MM-DD
-  tanggalSelesai: string        // YYYY-MM-DD
-
-  // Status & Payment
   status:         BookingStatus
-  snapToken?:     string
-  orderId?:       string
+  pembayaran:     PembayaranInfo | null
 
-  createdAt:      any
+  catatanPenyewa: string      // pesan/catatan saat booking
+  alasanBatal:    string      // diisi jika dibatalkan/ditolak
+
+  createdAt:      Timestamp
+  updatedAt:      Timestamp
+}
+
+// Untuk tipe data di Listing (update listing type juga)
+export interface HargaTipe {
+  harian?:   number
+  mingguan?: number
+  bulanan?:  number
 }
