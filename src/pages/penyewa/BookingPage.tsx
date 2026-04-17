@@ -1,251 +1,420 @@
-import { memo, useEffect, useState } from 'react'
-import { useParams, useNavigate }    from 'react-router-dom'
-import { CalendarDays, Clock, MapPin, AlertCircle, Info } from 'lucide-react'
-import Card    from '../../components/ui/Card'
-import Button  from '../../components/ui/Button'
-import Spinner from '../../components/ui/Spinner'
-import { getListingById } from '../../services/listingService'
-import { createBooking }  from '../../services/bookingService'
-import { useAuthStore }   from '../../store/authStore'
-import type { Listing }   from '../../types/listing'
-import { formatRupiah }   from '../../utils/format'
+import { memo, useEffect, useState, useMemo } from 'react'
+import { useParams, useNavigate }             from 'react-router-dom'
+import { ArrowLeft, CalendarDays, Clock, Home, ChevronRight, AlertCircle } from 'lucide-react'
+import { useAuthStore }          from '../../store/authStore'
+import { getListingById }        from '../../services/listingService'
+import {
+  createBooking,
+  hitungTanggalSelesai,
+  hitungTotalHarga,
+  getHargaSatuan,
+  getTipeKamarTersedia,
+  labelTipe,
+  satuanTipe,
+  type CreateBookingInput,
+} from '../../services/bookingService'
+import { formatRupiah }          from '../../utils/format'
+import type { Listing }          from '../../types/listing'
+import type { TipeKamar }        from '../../types/booking'
 
-// ── Konstanta fee ──────────────────────────────────────────
-const FEE_PERSEN     = 0.10   // 10% biaya layanan
-const BIAYA_MIDTRANS = 4_000  // Rp 4.000 biaya payment gateway
-
-// ── Helper kalkulasi ───────────────────────────────────────
-const hitungTanggalSelesai = (
-  tanggalMulai: string,
-  durasi: number,
-  tipe: 'perhari' | 'perbulan'
-): string => {
-  const d = new Date(tanggalMulai)
-  if (tipe === 'perhari') {
-    d.setDate(d.getDate() + durasi)
-  } else {
-    d.setMonth(d.getMonth() + durasi)
-  }
-  return d.toISOString().split('T')[0]
+// ── Konstanta durasi per tipe ─────────────────────────────────
+const OPSI_DURASI: Record<TipeKamar, { label: string; value: number }[]> = {
+  harian:   [1,2,3,5,7,10,14].map(n => ({ label: `${n} hari`,   value: n })),
+  mingguan: [1,2,3,4,6,8].map(n =>    ({ label: `${n} minggu`,  value: n })),
+  bulanan:  [1,2,3,4,6,9,12].map(n => ({ label: `${n} bulan`,   value: n })),
 }
 
+// ── Step Indicator ────────────────────────────────────────────
+const StepBar = ({ step }: { step: number }) => (
+  <div className="flex items-center justify-center gap-2 mb-6">
+    {['Tipe & Durasi', 'Tanggal', 'Konfirmasi'].map((label, i) => {
+      const idx    = i + 1
+      const active = idx === step
+      const done   = idx < step
+      return (
+        <div key={idx} className="flex items-center gap-2">
+          <div className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${
+            active ? 'text-amber-500' : done ? 'text-green-500' : 'text-slate-300'
+          }`}>
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border-2 transition-colors ${
+              active ? 'border-amber-400 bg-amber-400 text-white' :
+              done   ? 'border-green-400 bg-green-400 text-white' :
+                       'border-slate-200 text-slate-300'
+            }`}>
+              {done ? '✓' : idx}
+            </div>
+            <span className="hidden sm:block">{label}</span>
+          </div>
+          {i < 2 && <div className={`w-8 h-px ${done ? 'bg-green-300' : 'bg-slate-200'}`} />}
+        </div>
+      )
+    })}
+  </div>
+)
 
+// ── Format Tanggal Display ────────────────────────────────────
+const fmtDate = (d: Date) =>
+  d.toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
 
-// ── Opsi durasi ────────────────────────────────────────────
-const DURASI_HARIAN  = [1, 2, 3, 5, 7, 14, 30]
-const DURASI_BULANAN = [1, 2, 3, 4, 5, 6, 9, 12]
+const fmtDateShort = (d: Date) =>
+  d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
 
+// ─────────────────────────────────────────────────────────────
 const BookingPage = memo(() => {
-  const { id }                      = useParams<{ id: string }>()
-  const navigate                    = useNavigate()
-  const { user }                    = useAuthStore()
-  const [listing, setListing]       = useState<Listing | null>(null)
-  const [loading, setLoading]       = useState(true)
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError]           = useState('')
+  const { id }       = useParams<{ id: string }>()
+  const navigate     = useNavigate()
+  const { user }     = useAuthStore()
 
-  const today = new Date().toISOString().split('T')[0]
-  const [tanggalMulai, setTanggalMulai] = useState(today)
-  const [durasi, setDurasi]             = useState(1)
+  const [listing, setListing]   = useState<Listing | null>(null)
+  const [loading, setLoading]   = useState(true)
+  const [submitting, setSub]    = useState(false)
+  const [error, setError]       = useState('')
 
+  // Step state
+  const [step, setStep]             = useState(1)
+  const [tipeKamar, setTipeKamar]   = useState<TipeKamar>('bulanan')
+  const [durasi, setDurasi]         = useState(1)
+  const [tanggalMulai, setTanggal]  = useState<Date>(new Date())
+  const [catatan, setCatatan]       = useState('')
+
+  // Load listing
   useEffect(() => {
     if (!id) return
     getListingById(id)
       .then(data => {
         setListing(data)
-        // Reset durasi saat listing berubah
-        setDurasi(1)
+        if (data) {
+          const tipes = getTipeKamarTersedia(data)
+          setTipeKamar(tipes[0])
+        }
       })
       .finally(() => setLoading(false))
   }, [id])
 
-  const tipeHarga     = listing?.tipeHarga ?? 'perbulan'
-  const satuanLabel   = tipeHarga === 'perhari' ? 'hari' : 'bulan'
-  const opsiDurasi    = tipeHarga === 'perhari' ? DURASI_HARIAN : DURASI_BULANAN
+  // Kalkulasi derived values
+  const tipesTersedia  = useMemo(() => listing ? getTipeKamarTersedia(listing) : [], [listing])
+  const hargaSatuan    = useMemo(() => listing ? getHargaSatuan(listing, tipeKamar) : 0, [listing, tipeKamar])
+  const tanggalSelesai = useMemo(() => hitungTanggalSelesai(tanggalMulai, tipeKamar, durasi), [tanggalMulai, tipeKamar, durasi])
+  const totalHarga     = useMemo(() => hitungTotalHarga(hargaSatuan, durasi), [hargaSatuan, durasi])
 
-  const tanggalSelesai = listing
-    ? hitungTanggalSelesai(tanggalMulai, durasi, tipeHarga)
-    : today
+  // Reset durasi saat ganti tipe
+  const handleGantiTipe = (tipe: TipeKamar) => {
+    setTipeKamar(tipe)
+    setDurasi(1)
+  }
 
-  // Rincian biaya
-  const subtotal     = listing ? listing.harga * durasi : 0
-  const biayaLayan   = Math.round(subtotal * FEE_PERSEN)
-  const totalHarga   = subtotal + biayaLayan + BIAYA_MIDTRANS
+  // Tanggal minimal = hari ini
+  const todayStr = new Date().toISOString().split('T')[0]
 
-  const handleBooking = async () => {
+  // Submit booking
+  const handleSubmit = async () => {
     if (!listing || !user) return
-    setSubmitting(true)
+    setSub(true)
     setError('')
     try {
-      const orderId   = `ORDER-${Date.now()}-${user.uid.slice(0, 5)}`
-      const bookingId = await createBooking({
+      const input: CreateBookingInput = {
         listingId:      listing.id,
         listingNama:    listing.nama,
-        listingAlamat:  `${listing.alamat}, ${listing.kota}`,
+        listingAlamat:  listing.alamat,
         penyewaId:      user.uid,
         penyewaNama:    user.nama,
-        penyewaEmail:   user.email,
-        penyewaNoHp:    user.noHp,
+        penyewaEmail:   user.email ?? '',
         pemilikId:      listing.pemilikId,
-        harga:          listing.harga,
-        tipeHarga,
-        durasi,
-        subtotal,
-        biayaLayanan:   biayaLayan,
-        biayaMidtrans:  BIAYA_MIDTRANS,
-        totalHarga,
+        pemilikNama:    listing.pemilikNama,
+        tipeKamar,
         tanggalMulai,
         tanggalSelesai,
-        status:         'pending',
-        orderId,
-      })
-      navigate(`/payment/${bookingId}`)
-    } catch (e) {
-      console.error('BOOKING ERROR:', e)
-      setError('Gagal membuat booking, coba lagi.')
-      setSubmitting(false)
+        durasi,
+        hargaSatuan,
+        totalHarga,
+        catatanPenyewa: catatan,
+      }
+      const bookingId = await createBooking(input)
+      navigate(`/payment/${bookingId}`, { replace: true })
+    } catch (err) {
+      setError('Gagal membuat booking. Silakan coba lagi.')
+      console.error(err)
+    } finally {
+      setSub(false)
     }
   }
 
-  if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>
-  if (!listing) return <div className="text-center py-20 text-slate-400">Listing tidak ditemukan</div>
+  // ── Render ──────────────────────────────────────────────────
+  if (loading) return (
+    <div className="flex justify-center items-center min-h-[60vh]">
+      <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
+
+  if (!listing) return (
+    <div className="max-w-md mx-auto px-4 py-20 text-center">
+      <Home size={40} className="text-slate-200 mx-auto mb-3" />
+      <p className="text-slate-500 font-medium">Listing tidak ditemukan</p>
+      <button onClick={() => navigate('/listing')}
+        className="mt-4 text-sm text-amber-500 font-semibold hover:underline">
+        Cari kost lain
+      </button>
+    </div>
+  )
+
+  if (!user) {
+    navigate('/login')
+    return null
+  }
 
   return (
-    <main className="max-w-lg mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-slate-900 mb-6">Form Booking</h1>
+    <main className="max-w-lg mx-auto px-4 py-6">
 
-      {/* ── Info Kost ── */}
-      <Card padding="md" className="mb-4">
-        {listing.foto?.[0] && (
-          <div className="h-36 rounded-xl overflow-hidden mb-3 -mx-1">
-            <img src={listing.foto[0]} alt={listing.nama} className="w-full h-full object-cover" />
-          </div>
-        )}
-        <h2 className="font-semibold text-slate-900 mb-1">{listing.nama}</h2>
-        <div className="flex items-center gap-1 text-slate-500 text-sm mb-2">
-          <MapPin size={13} />
-          <span>{listing.alamat}, {listing.kota}</span>
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-5">
+        <button onClick={() => step > 1 ? setStep(s => s - 1) : navigate(-1)}
+          className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors">
+          <ArrowLeft size={18} />
+        </button>
+        <div>
+          <h1 className="text-base font-bold text-slate-900">Booking Kost</h1>
+          <p className="text-xs text-slate-400 truncate max-w-[240px]">{listing.nama}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-amber-500 font-bold">
-            {formatRupiah(listing.harga)}
-          </span>
-          <span className="text-slate-400 text-xs">/{satuanLabel}</span>
-          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-            tipeHarga === 'perhari'
-              ? 'bg-blue-50 text-blue-600'
-              : 'bg-green-50 text-green-600'
-          }`}>
-            {tipeHarga === 'perhari' ? '📅 Per Hari' : '🗓️ Per Bulan'}
-          </span>
-        </div>
-      </Card>
+      </div>
 
-      {/* ── Form Booking ── */}
-      <Card padding="md" className="mb-4">
-        <h3 className="font-semibold text-slate-700 mb-4">Detail Sewa</h3>
-        <div className="flex flex-col gap-4">
+      {/* Step indicator */}
+      <StepBar step={step} />
 
-          {/* Tanggal Mulai */}
-          <div>
-            <label
-              htmlFor="tanggal-mulai"
-              className="text-sm text-slate-600 mb-1.5 flex items-center gap-1.5 font-medium"
-            >
-              <CalendarDays size={14} className="text-amber-400" /> Tanggal Mulai
-            </label>
-            <input
-              id="tanggal-mulai"
-              type="date"
-              min={today}
-              value={tanggalMulai}
-              onChange={e => setTanggalMulai(e.target.value)}
-              className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-            />
-          </div>
+      {/* ── STEP 1: Tipe & Durasi ─────────────────────────── */}
+      {step === 1 && (
+        <div className="space-y-4">
 
-          {/* Durasi */}
-          <div>
-            <label
-              htmlFor="durasi"
-              className="text-sm text-slate-600 mb-1.5 flex items-center gap-1.5 font-medium"
-            >
-              <Clock size={14} className="text-amber-400" />
-              Durasi Sewa
-            </label>
-            <select
-              id="durasi"
-              value={durasi}
-              onChange={e => setDurasi(Number(e.target.value))}
-              className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
-            >
-              {opsiDurasi.map(n => (
-                <option key={n} value={n}>
-                  {n} {satuanLabel}
-                  {tipeHarga === 'perhari' && n >= 7 ? ` (${Math.round(n / 7)} minggu)` : ''}
-                </option>
+          {/* Pilih Tipe Kamar */}
+          <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+              Tipe Sewa
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {tipesTersedia.map(tipe => (
+                <button key={tipe}
+                  onClick={() => handleGantiTipe(tipe)}
+                  className={`py-2.5 px-3 rounded-xl text-sm font-semibold border-2 transition-all ${
+                    tipeKamar === tipe
+                      ? 'border-amber-400 bg-amber-50 text-amber-700'
+                      : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200'
+                  }`}
+                >
+                  {labelTipe(tipe)}
+                </button>
               ))}
-            </select>
+            </div>
           </div>
 
-          {/* Tanggal Selesai */}
-          <div className="bg-slate-50 rounded-xl px-3 py-2.5 text-sm flex justify-between items-center">
-            <span className="text-slate-400">Tanggal Selesai</span>
-            <span className="font-medium text-slate-700">{tanggalSelesai}</span>
+          {/* Harga satuan */}
+          <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
+            <p className="text-xs text-slate-500 mb-0.5">Harga per {satuanTipe(tipeKamar)}</p>
+            <p className="text-2xl font-bold text-amber-500">
+              {formatRupiah(hargaSatuan)}
+              <span className="text-sm font-normal text-slate-400 ml-1">/{satuanTipe(tipeKamar)}</span>
+            </p>
           </div>
 
-        </div>
-      </Card>
-
-      {/* ── Ringkasan Biaya ── */}
-      <Card padding="md" className="mb-4 bg-amber-50 border border-amber-100">
-        <h3 className="font-semibold text-slate-700 mb-3">Ringkasan Biaya</h3>
-        <div className="flex flex-col gap-2 text-sm">
-
-          {/* Subtotal */}
-          <div className="flex justify-between text-slate-600">
-            <span>{formatRupiah(listing.harga)} × {durasi} {satuanLabel}</span>
-            <span>{formatRupiah(subtotal)}</span>
+          {/* Pilih Durasi */}
+          <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+              Durasi Sewa
+            </p>
+            <div className="grid grid-cols-4 gap-2">
+              {OPSI_DURASI[tipeKamar].map(opsi => (
+                <button key={opsi.value}
+                  onClick={() => setDurasi(opsi.value)}
+                  className={`py-2 px-2 rounded-xl text-xs font-semibold border-2 transition-all ${
+                    durasi === opsi.value
+                      ? 'border-amber-400 bg-amber-50 text-amber-700'
+                      : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200'
+                  }`}
+                >
+                  {opsi.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Biaya layanan */}
-          <div className="flex justify-between text-slate-500">
-            <span className="flex items-center gap-1">
-              Biaya layanan (10%)
-              <Info size={12} className="text-slate-400" />
-            </span>
-            <span>{formatRupiah(biayaLayan)}</span>
+          {/* Subtotal preview */}
+          <div className="bg-slate-50 rounded-2xl p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-slate-400">Estimasi total</p>
+              <p className="text-lg font-bold text-slate-800">{formatRupiah(totalHarga)}</p>
+            </div>
+            <p className="text-xs text-slate-400 text-right">
+              {formatRupiah(hargaSatuan)} × {durasi} {satuanTipe(tipeKamar)}
+            </p>
           </div>
 
-          {/* Biaya Midtrans */}
-          <div className="flex justify-between text-slate-500">
-            <span>Biaya pembayaran</span>
-            <span>{formatRupiah(BIAYA_MIDTRANS)}</span>
-          </div>
-
-          {/* Divider */}
-          <div className="border-t border-amber-200 pt-2 mt-1 flex justify-between font-bold text-slate-900">
-            <span>Total Pembayaran</span>
-            <span className="text-amber-500 text-base">{formatRupiah(totalHarga)}</span>
-          </div>
-        </div>
-      </Card>
-
-      {error && (
-        <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 rounded-xl px-3 py-2.5 mb-4">
-          <AlertCircle size={15} /> {error}
+          <button onClick={() => setStep(2)}
+            className="w-full py-3.5 bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold rounded-2xl transition-colors flex items-center justify-center gap-2">
+            Lanjut Pilih Tanggal <ChevronRight size={16} />
+          </button>
         </div>
       )}
 
-      <Button
-        variant="primary"
-        size="lg"
-        fullWidth
-        loading={submitting}
-        onClick={handleBooking}
-      >
-        Lanjut ke Pembayaran — {formatRupiah(totalHarga)}
-      </Button>
+      {/* ── STEP 2: Pilih Tanggal ─────────────────────────── */}
+      {step === 2 && (
+        <div className="space-y-4">
+
+          <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+              <CalendarDays size={14} className="text-amber-400" />
+              Tanggal Mulai
+            </label>
+            <input
+              type="date"
+              min={todayStr}
+              value={tanggalMulai.toISOString().split('T')[0]}
+              onChange={e => setTanggal(new Date(e.target.value + 'T00:00:00'))}
+              className="w-full mt-2 px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all"
+            />
+          </div>
+
+          {/* Preview tanggal selesai */}
+          <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+              <Clock size={14} className="text-amber-400" />
+              Ringkasan Waktu
+            </p>
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-500">Check-in</span>
+                <span className="font-semibold text-slate-800">{fmtDate(tanggalMulai)}</span>
+              </div>
+              <div className="h-px bg-slate-100" />
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-500">Check-out</span>
+                <span className="font-semibold text-slate-800">{fmtDate(tanggalSelesai)}</span>
+              </div>
+              <div className="h-px bg-slate-100" />
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-500">Durasi</span>
+                <span className="font-semibold text-amber-600">
+                  {durasi} {satuanTipe(tipeKamar)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Catatan opsional */}
+          <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 block">
+              Catatan untuk Pemilik <span className="font-normal text-slate-300">(opsional)</span>
+            </label>
+            <textarea
+              value={catatan}
+              onChange={e => setCatatan(e.target.value)}
+              placeholder="Misal: saya akan datang sore hari, butuh parkir motor..."
+              rows={3}
+              maxLength={300}
+              className="w-full mt-1 px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 resize-none focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all"
+            />
+            <p className="text-right text-xs text-slate-300 mt-1">{catatan.length}/300</p>
+          </div>
+
+          <button onClick={() => setStep(3)}
+            className="w-full py-3.5 bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold rounded-2xl transition-colors flex items-center justify-center gap-2">
+            Lanjut Konfirmasi <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* ── STEP 3: Konfirmasi ────────────────────────────── */}
+      {step === 3 && (
+        <div className="space-y-4">
+
+          {/* Info kost */}
+          <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+              Detail Kost
+            </p>
+            <div className="flex gap-3 items-start">
+              {listing.foto?.[0] ? (
+                <img src={listing.foto[0]} alt={listing.nama}
+                  className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
+              ) : (
+                <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center text-2xl flex-shrink-0">🏠</div>
+              )}
+              <div className="min-w-0">
+                <p className="font-bold text-slate-900 text-sm leading-snug">{listing.nama}</p>
+                <p className="text-xs text-slate-400 mt-0.5 truncate">{listing.alamat}, {listing.kota}</p>
+                <p className="text-xs text-slate-500 mt-1">Pemilik: {listing.pemilikNama}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Ringkasan booking */}
+          <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm space-y-2.5">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+              Ringkasan Booking
+            </p>
+            {[
+              { label: 'Tipe Sewa',   value: labelTipe(tipeKamar) },
+              { label: 'Durasi',      value: `${durasi} ${satuanTipe(tipeKamar)}` },
+              { label: 'Check-in',    value: fmtDateShort(tanggalMulai) },
+              { label: 'Check-out',   value: fmtDateShort(tanggalSelesai) },
+              { label: 'Harga/Satuan',value: formatRupiah(hargaSatuan) },
+            ].map(row => (
+              <div key={row.label} className="flex items-center justify-between text-sm">
+                <span className="text-slate-400">{row.label}</span>
+                <span className="font-medium text-slate-800">{row.value}</span>
+              </div>
+            ))}
+            {catatan && (
+              <>
+                <div className="h-px bg-slate-100" />
+                <div className="text-sm">
+                  <span className="text-slate-400 block mb-1">Catatan</span>
+                  <p className="text-slate-600 text-xs leading-relaxed bg-slate-50 rounded-lg p-2.5">{catatan}</p>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Total harga */}
+          <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-slate-500">Total Pembayaran</p>
+              <p className="text-2xl font-extrabold text-amber-500">{formatRupiah(totalHarga)}</p>
+            </div>
+            <p className="text-xs text-slate-400 text-right leading-relaxed">
+              {formatRupiah(hargaSatuan)}<br />
+              × {durasi} {satuanTipe(tipeKamar)}
+            </p>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-4 py-3 rounded-xl">
+              <AlertCircle size={15} className="flex-shrink-0" />
+              {error}
+            </div>
+          )}
+
+          {/* Disclaimer */}
+          <p className="text-xs text-slate-400 text-center leading-relaxed px-2">
+            Dengan menekan tombol di bawah, kamu menyetujui syarat & ketentuan sewa kost ini.
+            Pembayaran harus dilakukan dalam <strong>24 jam</strong> atau booking akan hangus otomatis.
+          </p>
+
+          {/* Submit */}
+          <button
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="w-full py-3.5 bg-amber-400 hover:bg-amber-500 disabled:bg-amber-200 disabled:cursor-not-allowed text-slate-900 font-bold rounded-2xl transition-colors flex items-center justify-center gap-2"
+          >
+            {submitting ? (
+              <>
+                <div className="w-4 h-4 border-2 border-slate-900/30 border-t-slate-900 rounded-full animate-spin" />
+                Memproses...
+              </>
+            ) : (
+              'Konfirmasi & Lanjut Bayar'
+            )}
+          </button>
+        </div>
+      )}
 
     </main>
   )
