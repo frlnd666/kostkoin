@@ -1,42 +1,47 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect }      from 'react'
 
-import Navbar         from './components/layout/Navbar'
-import Footer         from './components/layout/Footer'
-import ProtectedRoute from './components/layout/ProtectedRoute'
+// Layout
+import Navbar             from './components/layout/Navbar'
+import Footer             from './components/layout/Footer'
+import ProtectedRoute     from './components/layout/ProtectedRoute'
 
 // Public
-import HomePage    from './pages/public/HomePage'
-import ListingPage from './pages/public/ListingPage'
-import DetailPage  from './pages/public/DetailPage'
+import HomePage           from './pages/public/HomePage'
+import ListingPage        from './pages/public/ListingPage'
+import DetailPage         from './pages/public/DetailPage'
 
 // Auth
-import LoginPage    from './pages/auth/LoginPage'
-import RegisterPage from './pages/auth/RegisterPage'
+import LoginPage          from './pages/auth/LoginPage'
+import RegisterPage       from './pages/auth/RegisterPage'
 
 // Penyewa
-import ProfilPage     from './pages/penyewa/ProfilPage'
-import BookingPage    from './pages/penyewa/BookingPage'
-import PaymentPage    from './pages/penyewa/PaymentPage'
-import RiwayatBooking from './pages/penyewa/RiwayatBooking'
-import BuktiBooking   from './pages/penyewa/BuktiBooking'
+import ProfilPage         from './pages/penyewa/ProfilPage'
+import BookingPage        from './pages/penyewa/BookingPage'
+import PaymentPage        from './pages/penyewa/PaymentPage'
+import RiwayatPage        from './pages/penyewa/RiwayatPage'          // ← BARU
+import DetailBookingPage  from './pages/penyewa/DetailBookingPage'    // ← BARU
 
 // Pemilik
-import DashboardPemilik  from './pages/pemilik/DashboardPemilik'
-import TambahListing     from './pages/pemilik/TambahListing'
-import RiwayatBookingPemilik from './pages/pemilik/RiwayatBooking'
+import DashboardPemilik   from './pages/pemilik/DashboardPemilik'
+import TambahListing      from './pages/pemilik/TambahListing'
+import BookingMasukPage   from './pages/pemilik/BookingMasukPage'     // ← BARU (ganti RiwayatBooking)
 
 // Admin
-import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminDashboard     from './pages/admin/AdminDashboard'
 
-import { useAuthStore }                  from './store/authStore'
-import { onAuthChange, getUserData }     from './services/authService'
+// Notifikasi
+import NotifikasiPage     from './pages/NotifikasiPage'               // ← BARU
+
+// Store & Service
+import { useAuthStore }          from './store/authStore'
+import { onAuthChange, getUserData } from './services/authService'
 
 function App() {
   const { setUser, setLoading, setInitialized } = useAuthStore()
 
   useEffect(() => {
-    const unsubscribe = onAuthChange(async (firebaseUser) => {
+    const unsubscribe = onAuthChange(async firebaseUser => {
       setLoading(true)
       if (firebaseUser) {
         const userData = await getUserData(firebaseUser.uid)
@@ -52,72 +57,86 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-slate-50">
         <Navbar />
         <div className="flex-1 pb-16">
           <Routes>
 
-            {/* ── Public ── */}
+            {/* ── Public ─────────────────────────────────── */}
             <Route path="/"            element={<HomePage />} />
             <Route path="/listing"     element={<ListingPage />} />
             <Route path="/listing/:id" element={<DetailPage />} />
 
-            {/* ── Auth ── */}
+            {/* ── Auth ───────────────────────────────────── */}
             <Route path="/login"    element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
 
-            {/* ── Profil (semua role) ── */}
+            {/* ── Penyewa ────────────────────────────────── */}
             <Route path="/profil" element={
               <ProtectedRoute>
                 <ProfilPage />
               </ProtectedRoute>
             } />
 
-            {/* ── Penyewa ── */}
             <Route path="/booking/:id" element={
               <ProtectedRoute allowedRoles={['penyewa']}>
                 <BookingPage />
               </ProtectedRoute>
             } />
+
             <Route path="/payment/:id" element={
               <ProtectedRoute allowedRoles={['penyewa']}>
                 <PaymentPage />
               </ProtectedRoute>
             } />
+
             <Route path="/riwayat" element={
               <ProtectedRoute allowedRoles={['penyewa']}>
-                <RiwayatBooking />
-              </ProtectedRoute>
-            } />
-            <Route path="/booking/:id/bukti" element={
-              <ProtectedRoute allowedRoles={['penyewa']}>
-                <BuktiBooking />
+                <RiwayatPage />
               </ProtectedRoute>
             } />
 
-            {/* ── Pemilik ── */}
+            <Route path="/booking/detail/:id" element={
+              <ProtectedRoute allowedRoles={['penyewa']}>
+                <DetailBookingPage />
+              </ProtectedRoute>
+            } />
+
+            {/* ── Pemilik ────────────────────────────────── */}
             <Route path="/pemilik/dashboard" element={
               <ProtectedRoute allowedRoles={['pemilik']}>
                 <DashboardPemilik />
               </ProtectedRoute>
             } />
+
             <Route path="/pemilik/tambah" element={
               <ProtectedRoute allowedRoles={['pemilik']}>
                 <TambahListing />
               </ProtectedRoute>
             } />
+
             <Route path="/pemilik/booking" element={
               <ProtectedRoute allowedRoles={['pemilik']}>
-                <RiwayatBookingPemilik />
+                <BookingMasukPage />
               </ProtectedRoute>
             } />
 
-            {/* ── Admin ── */}
+            {/* ── Admin ──────────────────────────────────── */}
             <Route path="/admin/dashboard" element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <AdminDashboard />
               </ProtectedRoute>
             } />
+
+            {/* ── Notifikasi (semua role login) ───────────── */}
+            <Route path="/notifikasi" element={
+              <ProtectedRoute>
+                <NotifikasiPage />
+              </ProtectedRoute>
+            } />
+
+            {/* ── Fallback ───────────────────────────────── */}
+            <Route path="*" element={<Navigate to="/" replace />} />
 
           </Routes>
         </div>
