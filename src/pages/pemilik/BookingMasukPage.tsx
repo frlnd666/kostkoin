@@ -1,8 +1,8 @@
 import { memo, useEffect, useState } from 'react'
 import { useNavigate }               from 'react-router-dom'
 import {
-  CheckCircle2, XCircle, Clock, ChevronRight,
-  Search, User, CalendarDays, AlertCircle
+  CheckCircle2, XCircle, ChevronRight,
+  Search, User, AlertCircle
 } from 'lucide-react'
 import { useAuthStore }        from '../../store/authStore'
 import {
@@ -15,7 +15,7 @@ import {
 } from '../../services/bookingService'
 import { formatRupiah }        from '../../utils/format'
 import type { Booking, BookingStatus } from '../../types/booking'
-import Spinner                 from '../../components/ui/Spinner'
+
 
 // ── Filter tabs ───────────────────────────────────────────────
 const TABS: { label: string; status: BookingStatus | 'semua' }[] = [
@@ -283,7 +283,7 @@ BookingDetailModal.displayName = 'BookingDetailModal'
 
 // ─────────────────────────────────────────────────────────────
 const BookingMasukPage = memo(() => {
-  const navigate             = useNavigate()
+  
   const { user }             = useAuthStore()
   const [bookings, setBookings]     = useState<Booking[]>([])
   const [loading, setLoading]       = useState(true)
