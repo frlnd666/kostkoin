@@ -1,6 +1,6 @@
 import type { Timestamp } from 'firebase/firestore'
 
-export type TipeKamar  = 'harian' | 'mingguan' | 'bulanan'
+export type TipeKamar = 'harian' | 'mingguan' | 'bulanan'
 
 export type BookingStatus =
   | 'menunggu_pembayaran'
@@ -12,9 +12,11 @@ export type BookingStatus =
   | 'hangus'
 
 export interface PembayaranInfo {
-  metode:    string       // 'transfer_bank' | 'ewallet' | 'tunai'
-  buktiUrl:  string       // URL foto bukti transfer
-  dibayarAt: Timestamp
+  metode:      string
+  orderId:     string
+  transactionId?: string
+  dibayarAt:   Timestamp
+  buktiUrl?:   string
 }
 
 export interface Booking {
@@ -25,29 +27,26 @@ export interface Booking {
   penyewaId:      string
   penyewaNama:    string
   penyewaEmail:   string
+  penyewaNoHp:    string           // ← tambah
   pemilikId:      string
   pemilikNama:    string
-
-  tipeKamar:      TipeKamar
+  tipeKamar:      TipeKamar        // ← tambah
   tanggalMulai:   Timestamp
   tanggalSelesai: Timestamp
-  durasi:         number      // jumlah hari/minggu/bulan
-  hargaSatuan:    number      // harga per periode
-  totalHarga:     number      // hargaSatuan × durasi
-
+  durasi:         number
+  hargaSatuan:    number           // ← ganti dari harga
+  totalHarga:     number
+  orderId:        string           // ← tambah (untuk Midtrans)
+  catatanPenyewa: string
   status:         BookingStatus
   pembayaran:     PembayaranInfo | null
-
-  catatanPenyewa: string      // pesan/catatan saat booking
-  alasanBatal:    string      // diisi jika dibatalkan/ditolak
-
+  alasanBatal:    string
+  dibatalkanOleh: 'penyewa' | 'pemilik' | ''
+  dibatalkanAt?:  Timestamp
+  dikonfirmasiAt?: Timestamp
+  aktifAt?:       Timestamp
+  selesaiAt?:     Timestamp
+  hangusAt?:      Timestamp
   createdAt:      Timestamp
   updatedAt:      Timestamp
-}
-
-// Untuk tipe data di Listing (update listing type juga)
-export interface HargaTipe {
-  harian?:   number
-  mingguan?: number
-  bulanan?:  number
 }
