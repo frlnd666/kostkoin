@@ -2,7 +2,7 @@ import {
   collection, addDoc, getDoc, getDocs, doc,
   updateDoc, query, where, orderBy,
   onSnapshot, serverTimestamp, Timestamp,
-  writeBatch, deleteField,
+  writeBatch,
 } from 'firebase/firestore'
 import { db }                                from '../config/firebase'
 import type { Booking, BookingStatus, TipeKamar, PembayaranInfo } from '../types/booking'
@@ -411,7 +411,7 @@ export const batalkanBooking = async (
 
   // Notif ke pihak yang tidak membatalkan
   const targetId   = dibatalkanOleh === 'penyewa' ? booking.pemilikId : booking.penyewaId
-  const targetNama = dibatalkanOleh === 'penyewa' ? booking.pemilikNama : booking.penyewaNama
+  
   const tmpl       = notifTemplates.bookingDibatalkan(booking.listingNama, alasanBatal, bookingId)
   await sendNotification(
     targetId, 'booking_dibatalkan',
