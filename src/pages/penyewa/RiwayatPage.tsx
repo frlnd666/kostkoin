@@ -1,6 +1,6 @@
 import { memo, useEffect, useState } from 'react'
 import { useNavigate }               from 'react-router-dom'
-import { FileText, ChevronRight, Search, Filter } from 'lucide-react'
+import { FileText, ChevronRight, Search } from 'lucide-react'
 import { useAuthStore }       from '../../store/authStore'
 import {
   listenBookingsByPenyewa,
@@ -44,8 +44,7 @@ const BookingCard = memo(({ booking, onClick }: {
 }) => {
   const isAktif    = booking.status === 'aktif' || booking.status === 'dikonfirmasi'
   const isBayar    = booking.status === 'menunggu_pembayaran'
-  const isSelesai  = booking.status === 'selesai'
-  const isBatal    = booking.status === 'dibatalkan' || booking.status === 'hangus'
+ 
 
   return (
     <button
