@@ -1,7 +1,7 @@
 import { memo, useEffect, useState, useMemo } from 'react'
 import { useNavigate }                         from 'react-router-dom'
 import {
-  Bell, BellOff, Trash2, CheckCheck,
+  BellOff, Trash2, CheckCheck,
   ChevronRight, RefreshCw
 } from 'lucide-react'
 import { useAuthStore }           from '../store/authStore'
