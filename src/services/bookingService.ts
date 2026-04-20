@@ -1,12 +1,14 @@
+// src/services/bookingService.ts
+
 import {
   collection, addDoc, getDoc, getDocs, doc,
   updateDoc, query, where, orderBy,
   onSnapshot, serverTimestamp, Timestamp,
   writeBatch,
 } from 'firebase/firestore'
-import { db }                               from '../config/firebase'
+import { db }                        from '../config/firebase'
 import type { Booking, BookingStatus, TipeKamar, PembayaranInfo } from '../types/booking'
-import type { Listing, TipeHarga }          from '../types/listing'
+import type { Listing, TipeHarga }   from '../types/listing'
 import { sendNotification, notifTemplates } from './notificationService'
 
 const COL = 'bookings'
@@ -73,12 +75,12 @@ export const labelStatus = (status: BookingStatus): string =>
 
 export const colorStatus = (status: BookingStatus): string =>
   ({
-    menunggu_pembayaran: 'text-amber-600  bg-amber-50',
-    sudah_dibayar:       'text-blue-600   bg-blue-50',
+    menunggu_pembayaran: 'text-amber-600 bg-amber-50',
+    sudah_dibayar:       'text-blue-600 bg-blue-50',
     dikonfirmasi:        'text-indigo-600 bg-indigo-50',
-    aktif:               'text-green-600  bg-green-50',
-    selesai:             'text-slate-600  bg-slate-100',
-    dibatalkan:          'text-red-600    bg-red-50',
+    aktif:               'text-green-600 bg-green-50',
+    selesai:             'text-slate-600 bg-slate-100',
+    dibatalkan:          'text-red-600 bg-red-50',
     hangus:              'text-orange-600 bg-orange-50',
   })[status] ?? 'text-slate-600 bg-slate-100'
 
@@ -90,14 +92,14 @@ export const tipeHargaToTipeKamar = (t: TipeHarga): TipeKamar =>
     perhari:   'harian',
     perminggu: 'mingguan',
     perbulan:  'bulanan',
-  } as Record<TipeHarga, TipeKamar>)[t] ?? 'bulanan'
+  } as Record<string, TipeKamar>)[t] ?? 'bulanan'
 
 export const tipeKamarToTipeHarga = (t: TipeKamar): TipeHarga =>
   ({
     harian:   'perhari',
     mingguan: 'perminggu',
     bulanan:  'perbulan',
-  } as Record<TipeKamar, TipeHarga>)[t] ?? 'perbulan'
+  } as Record<string, TipeHarga>)[t] ?? 'perbulan'
 
 export const getHargaSatuan = (listing: Listing, tipe: TipeKamar): number => {
   if (tipe === 'harian')   return listing.hargaPerHari   ?? listing.harga
@@ -190,7 +192,7 @@ export const createBooking = async (input: CreateBookingInput): Promise<string> 
 }
 
 // ─────────────────────────────────────────────────────────────
-// READ
+// READ (one-time)
 // ─────────────────────────────────────────────────────────────
 export const getBookingById = async (id: string): Promise<Booking | null> => {
   const snap = await getDoc(doc(db, COL, id))
@@ -285,7 +287,7 @@ export const listenBookingAktifByListing = (
 export const updateBookingStatus = async (
   id:     string,
   status: BookingStatus,
-  extra?: Partial<Omit<Booking, 'id'>>
+  extra?: Partial<Record<string, unknown>>
 ): Promise<void> => {
   await updateDoc(doc(db, COL, id), {
     status,
@@ -328,9 +330,9 @@ export const konfirmasiCheckin = async (
   booking:   Booking
 ): Promise<void> => {
   await updateDoc(doc(db, COL, bookingId), {
-    status:         'dikonfirmasi' as BookingStatus,
-    dikonfirmasiAt: serverTimestamp(),
-    updatedAt:      serverTimestamp(),
+    status:          'dikonfirmasi' as BookingStatus,
+    dikonfirmasiAt:  serverTimestamp(),
+    updatedAt:       serverTimestamp(),
   })
 
   const tmpl = notifTemplates.checkinDikonfirmasi(booking.listingNama, bookingId)
@@ -372,7 +374,6 @@ export const selesaikanBooking = async (
     booking.penyewaId, 'booking_selesai',
     tmpl.title, tmpl.body, tmpl.data
   )
-
   await sendNotification(
     booking.pemilikId, 'checkout_penyewa',
     '📦 Penyewa Checkout',
@@ -382,9 +383,9 @@ export const selesaikanBooking = async (
 }
 
 export const batalkanBooking = async (
-  bookingId:      string,
-  booking:        Booking,
-  alasanBatal:    string,
+  bookingId:     string,
+  booking:       Booking,
+  alasanBatal:   string,
   dibatalkanOleh: 'penyewa' | 'pemilik'
 ): Promise<void> => {
   await updateDoc(doc(db, COL, bookingId), {
@@ -434,6 +435,9 @@ export const hanguskanBooking = async (
   )
 }
 
+// ─────────────────────────────────────────────────────────────
+// KALKULASI PENDAPATAN
+// ─────────────────────────────────────────────────────────────
 export const hitungPendapatanPemilik = async (pemilikId: string): Promise<number> => {
   const bookings = await getBookingsByPemilik(pemilikId)
   return bookings
