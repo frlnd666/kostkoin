@@ -119,6 +119,7 @@ const BookingPage = memo(() => {
         penyewaId:      user.uid,
         penyewaNama:    user.nama,
         penyewaEmail:   user.email ?? '',
+        penyewaNoHp:   user.noHp ?? '',
         pemilikId:      listing.pemilikId,
         pemilikNama:    listing.pemilikNama,
         tipeKamar,
