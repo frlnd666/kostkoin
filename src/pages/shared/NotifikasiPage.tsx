@@ -1,6 +1,7 @@
 import { memo, useEffect, useState }  from 'react'
 import { useNavigate }                from 'react-router-dom'
 import { BellOff, Trash2, CheckCheck } from 'lucide-react'
+import { playNotifSound } from '../../utils/notifSound'
 import { useAuthStore }               from '../../store/authStore'
 import {
   listenNotifications,
@@ -89,13 +90,25 @@ const NotifikasiPage = memo(() => {
   const [tab, setTab]         = useState<'semua' | 'belum_dibaca'>('semua')
 
   useEffect(() => {
-    if (!user?.uid) return
-    const unsub = listenNotifications(user.uid, data => {
-      setNotifs(data)
-      setLoading(false)
-    })
-    return () => unsub()
-  }, [user?.uid])
+  if (!user?.uid) return
+  let initialized = false
+  let prevCount   = 0
+
+  const unsub = listenNotifications(user.uid, data => {
+    if (initialized && data.length > prevCount) {
+      // Ada notif baru masuk → bunyi
+      const newUnread = data.filter(n => !n.isRead).length
+      if (newUnread > notifs.filter(n => !n.isRead).length) {
+        playNotifSound()
+      }
+    }
+    prevCount   = data.length
+    initialized = true
+    setNotifs(data)
+    setLoading(false)
+  })
+  return () => unsub()
+}, [user?.uid])
 
   const handleClick = async (notif: Notifikasi) => {
     if (!notif.isRead) await markAsRead(notif.id)
