@@ -12,41 +12,41 @@ export type BookingStatus =
   | 'hangus'
 
 export interface PembayaranInfo {
-  metode:      string
-  orderId:     string
+  metode:         string
+  orderId:        string
   transactionId?: string
-  dibayarAt:   Timestamp
-  buktiUrl?:   string
+  dibayarAt:      Timestamp
+  buktiUrl?:      string
 }
 
 export interface Booking {
-  id:             string
-  listingId:      string
-  listingNama:    string
-  listingAlamat:  string
-  penyewaId:      string
-  penyewaNama:    string
-  penyewaEmail:   string
-  penyewaNoHp:    string           // ← tambah
-  pemilikId:      string
-  pemilikNama:    string
-  tipeKamar:      TipeKamar        // ← tambah
-  tanggalMulai:   Timestamp
-  tanggalSelesai: Timestamp
-  durasi:         number
-  hargaSatuan:    number           // ← ganti dari harga
-  totalHarga:     number
-  orderId:        string           // ← tambah (untuk Midtrans)
-  catatanPenyewa: string
-  status:         BookingStatus
-  pembayaran:     PembayaranInfo | null
-  alasanBatal:    string
-  dibatalkanOleh: 'penyewa' | 'pemilik' | ''
-  dibatalkanAt?:  Timestamp
+  id:              string
+  listingId:       string
+  listingNama:     string
+  listingAlamat:   string
+  penyewaId:       string
+  penyewaNama:     string
+  penyewaEmail:    string
+  penyewaNoHp:     string
+  pemilikId:       string
+  pemilikNama:     string
+  tipeKamar:       TipeKamar
+  tanggalMulai:    Timestamp
+  tanggalSelesai:  Timestamp
+  durasi:          number
+  hargaSatuan:     number
+  totalHarga:      number
+  orderId:         string
+  catatanPenyewa:  string
+  status:          BookingStatus
+  pembayaran:      PembayaranInfo | null
+  alasanBatal:     string
+  dibatalkanOleh:  'penyewa' | 'pemilik' | ''
+  dibatalkanAt?:   Timestamp
   dikonfirmasiAt?: Timestamp
-  aktifAt?:       Timestamp
-  selesaiAt?:     Timestamp
-  hangusAt?:      Timestamp
-  createdAt:      Timestamp
-  updatedAt:      Timestamp
+  aktifAt?:        Timestamp
+  selesaiAt?:      Timestamp
+  hangusAt?:       Timestamp
+  createdAt:       Timestamp
+  updatedAt:       Timestamp
 }
