@@ -1,8 +1,8 @@
+// src/types/listing.ts
+
 export type ListingStatus = 'pending' | 'approved' | 'active' | 'rejected' | 'inactive'
 
-// Tipe harga yang didukung per listing
 export type TipeHarga = 'perhari' | 'perminggu' | 'perbulan'
-// ↑ tambah 'perminggu' — kalau tidak mau, hapus saja dan sesuaikan di BookingPage
 
 export interface Listing {
   id:          string
@@ -15,14 +15,17 @@ export interface Listing {
   pemilikId:   string
   pemilikNama: string
   status:      ListingStatus
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   createdAt:   any
 
-  // ── Harga ───────────────────────────────────────────────────
-  harga:       number       // harga utama (backward compat — tetap ada)
-  tipeHarga:   TipeHarga    // tipe default listing
+  // Harga
+  harga:           number
+  tipeHarga:       TipeHarga
+  hargaPerHari?:   number
+  hargaPerMinggu?: number
+  hargaPerBulan?:  number
 
-  // Harga per tipe (opsional — diisi jika listing support multi tipe)
-  hargaPerHari?:    number
-  hargaPerMinggu?:  number
-  hargaPerBulan?:   number
+  // Koordinat peta (opsional — diisi saat tambah/edit listing)
+  lat?: number
+  lng?: number
 }
