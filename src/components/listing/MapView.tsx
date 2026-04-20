@@ -1,32 +1,7 @@
 // src/components/listing/MapView.tsx
 
 import { useEffect, useRef } from 'react'
-
-// ── Tipe lokal Leaflet (CDN) ──
-interface LeafletMap {
-  setView: (center: [number, number], zoom: number) => LeafletMap
-  remove:  () => void
-}
-interface LeafletMarker {
-  addTo:      (map: LeafletMap) => LeafletMarker
-  bindPopup:  (content: string) => LeafletMarker
-  openPopup:  () => LeafletMarker
-}
-interface LeafletLayer {
-  addTo: (map: LeafletMap) => LeafletLayer
-}
-interface LeafletIcon {}
-interface LeafletStatic {
-  map:       (el: HTMLElement, opts?: object) => LeafletMap
-  tileLayer: (url: string, opts?: object) => LeafletLayer
-  marker:    (pos: [number, number], opts?: object) => LeafletMarker
-  divIcon:   (opts: object) => LeafletIcon
-}
-declare global {
-  interface Window { L: LeafletStatic }
-}
-
-// ──────────────────────────────────────────────────────
+// Tipe global Leaflet diambil dari src/types/leaflet.d.ts (otomatis)
 
 interface MapViewProps {
   lat:     number
@@ -37,7 +12,7 @@ interface MapViewProps {
 
 const MapView = ({ lat, lng, nama, alamat }: MapViewProps) => {
   const mapRef      = useRef<HTMLDivElement>(null)
-  const mapInstance = useRef<LeafletMap | null>(null)
+  const mapInstance = useRef<LMap | null>(null)
 
   useEffect(() => {
     if (!mapRef.current || mapInstance.current) return
@@ -52,18 +27,15 @@ const MapView = ({ lat, lng, nama, alamat }: MapViewProps) => {
         maxZoom: 19,
       }).addTo(map)
 
-      const icon = L.divIcon({
-        className: '',
-        html: `<div style="width:36px;height:36px;border-radius:50% 50% 50% 0;
-          background:#f59e0b;border:3px solid #fff;
-          box-shadow:0 2px 8px rgba(0,0,0,0.3);
-          transform:rotate(-45deg);"></div>`,
-        iconSize:    [36, 36],
-        iconAnchor:  [18, 36],
-        popupAnchor: [0, -36],
+      L.marker([lat, lng], {
+        icon: L.divIcon({
+          className:   '',
+          html:        `<div style="width:36px;height:36px;border-radius:50% 50% 50% 0;background:#f59e0b;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);transform:rotate(-45deg);"></div>`,
+          iconSize:    [36, 36],
+          iconAnchor:  [18, 36],
+          popupAnchor: [0, -36],
+        }),
       })
-
-      L.marker([lat, lng], { icon })
         .addTo(map)
         .bindPopup(`<b>${nama}</b>${alamat ? `<br/><span style="font-size:12px;color:#666">${alamat}</span>` : ''}`)
         .openPopup()
@@ -80,7 +52,7 @@ const MapView = ({ lat, lng, nama, alamat }: MapViewProps) => {
       document.head.appendChild(link)
     }
 
-    // Load JS atau langsung init jika sudah ada
+    // Load JS atau langsung init
     if (window.L) {
       initMap()
     } else if (!document.getElementById('leaflet-js')) {
@@ -90,7 +62,6 @@ const MapView = ({ lat, lng, nama, alamat }: MapViewProps) => {
       script.onload = initMap
       document.head.appendChild(script)
     } else {
-      // Script sedang loading, tunggu
       const check = setInterval(() => {
         if (window.L) { clearInterval(check); initMap() }
       }, 100)
