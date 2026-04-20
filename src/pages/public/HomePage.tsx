@@ -1,14 +1,17 @@
-import { memo } from 'react'
-import { Link } from 'react-router-dom'
+// src/pages/public/HomePage.tsx
+
+import { memo }  from 'react'
+import { Link }  from 'react-router-dom'
 import { Search, MapPin, Shield, Star, ChevronRight } from 'lucide-react'
-import { APP_TAGLINE } from '../../constants'
+import { APP_TAGLINE }  from '../../constants'
+import BannerSlider     from '../../components/home/BannerSlider'
 
 const HomePage = memo(() => {
   return (
     <main style={{ background: 'var(--color-bg)', color: 'var(--color-text)', minHeight: '100vh' }}>
 
       {/* ── HERO ── */}
-      <section style={{ background: 'var(--color-bg)', padding: '2.5rem 1rem 2rem' }}>
+      <section style={{ background: 'var(--color-bg)', padding: '2.5rem 1rem 1.5rem' }}>
         <div style={{ maxWidth: 560, margin: '0 auto', textAlign: 'center' }}>
 
           <span style={{
@@ -103,8 +106,15 @@ const HomePage = memo(() => {
         </div>
       </section>
 
+      {/* ── BANNER SLIDER ── */}
+      <section style={{ padding: '0 1rem 1.5rem' }}>
+        <div style={{ maxWidth: 560, margin: '0 auto' }}>
+          <BannerSlider />
+        </div>
+      </section>
+
       {/* ── KOTA PILIHAN ── */}
-      <section style={{ padding: '1.5rem 1rem' }}>
+      <section style={{ padding: '0 1rem 1.5rem' }}>
         <div style={{ maxWidth: 560, margin: '0 auto' }}>
           <div style={{ display: 'flex', gap: '0.6rem', overflowX: 'auto', paddingBottom: 4 }}>
             {['Serang', 'Tangerang', 'Tangerang Selatan', 'Cilegon', 'Lebak'].map(kota => (
@@ -128,7 +138,7 @@ const HomePage = memo(() => {
       </section>
 
       {/* ── FITUR UNGGULAN ── */}
-      <section style={{ padding: '0.5rem 1rem 1.5rem' }}>
+      <section style={{ padding: '0 1rem 1.5rem' }}>
         <div style={{ maxWidth: 560, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
           {[
             { icon: <Star size={18}/>, title: 'Listing Terverifikasi', desc: 'Semua kost dicek & disetujui admin sebelum tayang' },
