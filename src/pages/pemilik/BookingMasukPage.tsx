@@ -1,6 +1,6 @@
 import { memo, useEffect, useState } from 'react'
 import { useParams }                  from 'react-router-dom'
-import { Phone, MessageCircle, CheckCircle, XCircle, CalendarDays, MapPin, User } from 'lucide-react'
+import { Phone, MessageCircle, CheckCircle, XCircle, MapPin, User } from 'lucide-react'
 import { useAuthStore }              from '../../store/authStore'
 import {
   listenBookingById,
