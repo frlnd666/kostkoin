@@ -240,30 +240,25 @@ export const getBookingAktifByListing = async (listingId: string): Promise<Booki
 // ─────────────────────────────────────────────────────────────
 // REALTIME LISTENERS
 // ─────────────────────────────────────────────────────────────
+const toBooking = (d: { id: string; data: () => Record<string, unknown> }): Booking => {
+  const data = d.data()
+  return {
+    id: d.id,
+    ...data,
+    tanggalMulai:   data.tanggalMulai   instanceof Timestamp ? (data.tanggalMulai   as Timestamp).toDate() : data.tanggalMulai,
+    tanggalSelesai: data.tanggalSelesai instanceof Timestamp ? (data.tanggalSelesai as Timestamp).toDate() : data.tanggalSelesai,
+    createdAt:      data.createdAt      instanceof Timestamp ? (data.createdAt      as Timestamp).toDate() : data.createdAt,
+    updatedAt:      data.updatedAt      instanceof Timestamp ? (data.updatedAt      as Timestamp).toDate() : data.updatedAt,
+  } as Booking
+}
+
 export const listenBookingsByPenyewa = (
   penyewaId: string,
   callback:  (bookings: Booking[]) => void
 ) =>
   onSnapshot(
-    query(
-      collection(db, COL),
-      where('penyewaId', '==', penyewaId),
-      orderBy('createdAt', 'desc')
-    ),
-    snap => callback(
-      snap.docs.map(d => {
-        const data = d.data()
-        return {
-          id: d.id,
-          ...data,
-          // Konversi semua Timestamp → Date secara eksplisit
-          tanggalMulai:   data.tanggalMulai   instanceof Timestamp ? data.tanggalMulai.toDate()   : data.tanggalMulai,
-          tanggalSelesai: data.tanggalSelesai instanceof Timestamp ? data.tanggalSelesai.toDate() : data.tanggalSelesai,
-          createdAt:      data.createdAt      instanceof Timestamp ? data.createdAt.toDate()      : data.createdAt,
-          updatedAt:      data.updatedAt      instanceof Timestamp ? data.updatedAt.toDate()      : data.updatedAt,
-        } as Booking
-      })
-    )
+    query(collection(db, COL), where('penyewaId', '==', penyewaId), orderBy('createdAt', 'desc')),
+    snap => callback(snap.docs.map(toBooking))
   )
 
 export const listenBookingsByPemilik = (
@@ -271,24 +266,8 @@ export const listenBookingsByPemilik = (
   callback:  (bookings: Booking[]) => void
 ) =>
   onSnapshot(
-    query(
-      collection(db, COL),
-      where('pemilikId', '==', pemilikId),
-      orderBy('createdAt', 'desc')
-    ),
-    snap => callback(
-      snap.docs.map(d => {
-        const data = d.data()
-        return {
-          id: d.id,
-          ...data,
-          tanggalMulai:   data.tanggalMulai   instanceof Timestamp ? data.tanggalMulai.toDate()   : data.tanggalMulai,
-          tanggalSelesai: data.tanggalSelesai instanceof Timestamp ? data.tanggalSelesai.toDate() : data.tanggalSelesai,
-          createdAt:      data.createdAt      instanceof Timestamp ? data.createdAt.toDate()      : data.createdAt,
-          updatedAt:      data.updatedAt      instanceof Timestamp ? data.updatedAt.toDate()      : data.updatedAt,
-        } as Booking
-      })
-    )
+    query(collection(db, COL), where('pemilikId', '==', pemilikId), orderBy('createdAt', 'desc')),
+    snap => callback(snap.docs.map(toBooking))
   )
 
 export const listenBookingById = (
@@ -297,18 +276,8 @@ export const listenBookingById = (
 ) =>
   onSnapshot(doc(db, COL, bookingId), snap => {
     if (!snap.exists()) { callback(null); return }
-    const data = snap.data()
-    callback({
-      id: snap.id,
-      ...data,
-      tanggalMulai:   data.tanggalMulai   instanceof Timestamp ? data.tanggalMulai.toDate()   : data.tanggalMulai,
-      tanggalSelesai: data.tanggalSelesai instanceof Timestamp ? data.tanggalSelesai.toDate() : data.tanggalSelesai,
-      createdAt:      data.createdAt      instanceof Timestamp ? data.createdAt.toDate()      : data.createdAt,
-      updatedAt:      data.updatedAt      instanceof Timestamp ? data.updatedAt.toDate()      : data.updatedAt,
-    } as Booking)
+    callback(toBooking({ id: snap.id, data: () => snap.data() }))
   })
-
-
 
 export const listenBookingAktifByListing = (
   listingId: string,
@@ -321,7 +290,7 @@ export const listenBookingAktifByListing = (
       where('status', 'in', ['aktif', 'dikonfirmasi']),
       orderBy('tanggalMulai', 'asc')
     ),
-    snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as Booking)))
+    snap => callback(snap.docs.map(toBooking))
   )
 
 // ─────────────────────────────────────────────────────────────
