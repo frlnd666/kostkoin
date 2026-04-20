@@ -1,10 +1,13 @@
-import { memo, useEffect, useState } from 'react'
-import { useParams, useNavigate }    from 'react-router-dom'
+// src/pages/public/DetailPage.tsx
+
+import { memo, useEffect, useState }    from 'react'
+import { useParams, useNavigate }       from 'react-router-dom'
 import { MapPin, CheckCircle, ArrowLeft, Share2, CheckCircle2 } from 'lucide-react'
-import Card    from '../../components/ui/Card'
-import Button  from '../../components/ui/Button'
-import Spinner from '../../components/ui/Spinner'
-import Badge   from '../../components/ui/Badge'
+import Card     from '../../components/ui/Card'
+import Button   from '../../components/ui/Button'
+import Spinner  from '../../components/ui/Spinner'
+import Badge    from '../../components/ui/Badge'
+import MapView  from '../../components/listing/MapView'
 import { getListingById } from '../../services/listingService'
 import { useAuthStore }   from '../../store/authStore'
 import type { Listing }   from '../../types/listing'
@@ -27,22 +30,16 @@ const DetailPage = memo(() => {
   }, [id])
 
   const handleShare = async () => {
-  const url = window.location.href
-  const teks = `🏠 *${listing?.nama}*\n📍 ${listing?.alamat}, ${listing?.kota}\n💰 ${formatRupiah(listing?.harga ?? 0)}/bulan\n\nCek di KostKoin 👇`
-
-  if (navigator.share) {
-    await navigator.share({
-      title: listing?.nama ?? 'KostKoin',
-      text:  teks,
-      url,           // ← URL dikirim di sini, JANGAN masukkan ke dalam teks
-    })
-  } else {
-    // Fallback: copy teks + url sekaligus
-    await navigator.clipboard.writeText(`${teks}\n${url}`)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    const url  = window.location.href
+    const teks = `🏠 *${listing?.nama}*\n📍 ${listing?.alamat}, ${listing?.kota}\n💰 ${formatRupiah(listing?.harga ?? 0)}/bulan\n\nCek di KostKoin 👇`
+    if (navigator.share) {
+      await navigator.share({ title: listing?.nama ?? 'KostKoin', text: teks, url })
+    } else {
+      await navigator.clipboard.writeText(`${teks}\n${url}`)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
   }
-}
 
   if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>
   if (!listing) return (
@@ -63,21 +60,14 @@ const DetailPage = memo(() => {
         >
           <ArrowLeft size={16} /> Kembali
         </button>
-
         <button
           onClick={handleShare}
           className="flex items-center gap-2 text-sm font-medium text-amber-500 hover:text-amber-600 transition-colors"
         >
           {copied ? (
-            <>
-              <CheckCircle2 size={16} className="text-green-500" />
-              <span className="text-green-500">Link disalin!</span>
-            </>
+            <><CheckCircle2 size={16} className="text-green-500" /><span className="text-green-500">Link disalin!</span></>
           ) : (
-            <>
-              <Share2 size={16} />
-              Share
-            </>
+            <><Share2 size={16} />Share</>
           )}
         </button>
       </div>
@@ -149,6 +139,35 @@ const DetailPage = memo(() => {
               </div>
             ))}
           </div>
+        </Card>
+      )}
+
+      {/* ── MAPS ── */}
+      {listing.lat && listing.lng ? (
+        <div className="mb-4">
+          <h3 className="font-semibold text-slate-700 text-sm mb-2 flex items-center gap-1.5">
+            <MapPin size={14} className="text-amber-400" /> Lokasi Kost
+          </h3>
+          <MapView
+            lat={listing.lat}
+            lng={listing.lng}
+            nama={listing.nama}
+            alamat={listing.alamat}
+          />
+        </div>
+      ) : (
+        <Card padding="md" className="mb-4">
+          <h3 className="font-semibold text-slate-700 text-sm mb-2 flex items-center gap-1.5">
+            <MapPin size={14} className="text-amber-400" /> Lokasi Kost
+          </h3>
+          <a
+            href={`https://www.google.com/maps/search/${encodeURIComponent(`${listing.nama} ${listing.alamat} ${listing.kota}`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 py-3 bg-slate-50 hover:bg-slate-100 rounded-xl text-sm font-medium text-slate-600 transition-colors border border-slate-200"
+          >
+            🗺️ Buka di Google Maps
+          </a>
         </Card>
       )}
 
