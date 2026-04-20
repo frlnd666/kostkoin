@@ -31,7 +31,7 @@ import BookingMasukPage   from './pages/pemilik/BookingMasukPage'     // ← BAR
 import AdminDashboard     from './pages/admin/AdminDashboard'
 
 // Notifikasi
-import NotifikasiPage     from './pages/NotifikasiPage'               // ← BARU
+import NotifikasiPage     from './pages/shared/NotifikasiPage'               // ← BARU
 
 // Store & Service
 import { useAuthStore }          from './store/authStore'
