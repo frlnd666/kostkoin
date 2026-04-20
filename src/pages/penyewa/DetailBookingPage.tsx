@@ -15,7 +15,7 @@ import Spinner           from '../../components/ui/Spinner'
 import Button            from '../../components/ui/Button'
 import Card              from '../../components/ui/Card'
 import Modal             from '../../components/ui/Modal'
-import { useAuthStore }  from '../../store/authStore'
+
 
 const DetailBookingPage = memo(() => {
   const { id }                      = useParams<{ id: string }>()
