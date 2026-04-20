@@ -9,6 +9,7 @@ import { formatRupiah }                 from '../../utils/format'
 import Card                             from '../../components/ui/Card'
 import Button                           from '../../components/ui/Button'
 import Spinner                          from '../../components/ui/Spinner'
+import { playSuccessSound, playErrorSound } from '../../utils/notifSound'
 
 declare global {
   interface Window {
@@ -66,20 +67,19 @@ const PaymentPage = memo(() => {
 
       window.snap.pay(token, {
         onSuccess: () => {
-          setBooking(prev => prev ? { ...prev, status: 'sudah_dibayar' as BookingStatus } : prev)
-          setPaying(false)
-        },
+  playSuccessSound()   // ← tambahkan ini
+  setBooking(prev => prev ? { ...prev, status: 'sudah_dibayar' as BookingStatus } : prev)
+  setPaying(false)
+},
         onPending: () => {
           setBooking(prev => prev ? { ...prev, status: 'menunggu_pembayaran' as BookingStatus } : prev)
           setPaying(false)
         },
         onError: () => {
-          setError('Pembayaran gagal, silakan coba lagi.')
-          setPaying(false)
-        },
-        onClose: () => {
-          setPaying(false)
-        },
+  playErrorSound()     // ← tambahkan ini
+  setError('Pembayaran gagal, silakan coba lagi.')
+  setPaying(false)
+},
       })
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Gagal memproses pembayaran')
