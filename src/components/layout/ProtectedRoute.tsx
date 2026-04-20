@@ -10,11 +10,12 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = memo<ProtectedRouteProps>(({ children, allowedRoles }) => {
-  const { user, loading } = useAuthStore()
+  const { user, loading, initialized } = useAuthStore()
 
-  if (loading) {
+  // Tunggu sampai auth benar-benar selesai inisialisasi
+  if (loading || !initialized) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <Spinner size="lg" />
       </div>
     )
