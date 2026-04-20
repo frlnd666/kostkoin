@@ -75,11 +75,14 @@ const PaymentPage = memo(() => {
           setBooking(prev => prev ? { ...prev, status: 'menunggu_pembayaran' as BookingStatus } : prev)
           setPaying(false)
         },
-        onError: () => {
-  playErrorSound()     // ← tambahkan ini
-  setError('Pembayaran gagal, silakan coba lagi.')
-  setPaying(false)
-},
+        onError: (_result: Record<string, string>) => {
+    playErrorSound()
+    setError('Pembayaran gagal, silakan coba lagi.')
+    setPaying(false)
+  },
+  onClose: () => {          // ← ini yang menyebabkan error TS2345
+    setPaying(false)
+  },
       })
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Gagal memproses pembayaran')
