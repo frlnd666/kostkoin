@@ -1,6 +1,6 @@
 import { memo, useEffect, useState } from 'react'
 import { useParams, useNavigate }    from 'react-router-dom'
-import { Download, ArrowLeft, CalendarDays, MapPin, User } from 'lucide-react'
+import { Download, ArrowLeft, CalendarDays, MapPin } from 'lucide-react'
 import {
   listenBookingById,
   formatTanggal,
