@@ -308,14 +308,7 @@ export const listenBookingById = (
     } as Booking)
   })
 
-export const listenBookingById = (
-  bookingId: string,
-  callback:  (booking: Booking | null) => void
-) =>
-  onSnapshot(doc(db, COL, bookingId), snap => {
-    if (!snap.exists()) { callback(null); return }
-    callback({ id: snap.id, ...snap.data() } as Booking)
-  })
+
 
 export const listenBookingAktifByListing = (
   listingId: string,
