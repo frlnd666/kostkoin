@@ -1,28 +1,30 @@
 import { memo, useEffect, useState } from 'react'
 import { useParams, useNavigate }    from 'react-router-dom'
-import { ArrowLeft, AlertCircle }    from 'lucide-react'
+import { ArrowLeft, FileText, XCircle, CalendarDays, MapPin, Phone, MessageCircle } from 'lucide-react'
 import {
   listenBookingById,
   batalkanBooking,
-  labelStatus, colorStatus,
-  labelTipe, satuanTipe,
-  formatTanggal, formatTanggalPendek,
+  formatTanggal,
+  labelStatus,
+  colorStatus,
+  labelTipe,
 } from '../../services/bookingService'
-import { formatRupiah }   from '../../utils/format'
-import { useAuthStore }   from '../../store/authStore'
-import type { Booking }   from '../../types/booking'
-import Spinner            from '../../components/ui/Spinner'
-import Button             from '../../components/ui/Button'
+import type { Booking }  from '../../types/booking'
+import { formatRupiah }  from '../../utils/format'
+import Spinner           from '../../components/ui/Spinner'
+import Button            from '../../components/ui/Button'
+import Card              from '../../components/ui/Card'
+import Modal             from '../../components/ui/Modal'
+import { useAuthStore }  from '../../store/authStore'
 
 const DetailBookingPage = memo(() => {
-  const { id }     = useParams<{ id: string }>()
-  const navigate   = useNavigate()
-  const { user }   = useAuthStore()
-
+  const { id }                      = useParams<{ id: string }>()
+  const navigate                    = useNavigate()
+  const { user }                    = useAuthStore()
   const [booking, setBooking]       = useState<Booking | null>(null)
   const [loading, setLoading]       = useState(true)
   const [batalModal, setBatalModal] = useState(false)
-  const [alasan, setAlasan]         = useState('')
+  const [alasanBatal, setAlasanBatal] = useState('')
   const [processing, setProcessing] = useState(false)
   const [error, setError]           = useState('')
 
@@ -36,13 +38,13 @@ const DetailBookingPage = memo(() => {
   }, [id])
 
   const handleBatal = async () => {
-    if (!booking || !user) return
+    if (!booking || !alasanBatal.trim()) return
     setProcessing(true)
     setError('')
     try {
-      await batalkanBooking(booking.id, booking, alasan || 'Dibatalkan oleh penyewa', 'penyewa')
+      await batalkanBooking(booking.id, booking, alasanBatal.trim(), 'penyewa')
       setBatalModal(false)
-      navigate('/riwayat')
+      setAlasanBatal('')
     } catch {
       setError('Gagal membatalkan booking. Coba lagi.')
     } finally {
@@ -50,142 +52,168 @@ const DetailBookingPage = memo(() => {
     }
   }
 
-  const bolehBatal = booking?.status === 'menunggu_pembayaran' || booking?.status === 'sudah_dibayar'
+  if (loading) return (
+    <div className="flex justify-center py-20"><Spinner size="lg" /></div>
+  )
 
-  if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>
   if (!booking) return (
     <div className="text-center py-20 text-slate-400">
-      <p className="mb-3">Booking tidak ditemukan</p>
-      <Button variant="ghost" onClick={() => navigate('/riwayat')}>Kembali</Button>
+      <p className="text-lg font-medium">Booking tidak ditemukan</p>
+      <button onClick={() => navigate('/riwayat')} className="mt-3 text-sm text-amber-500">
+        Kembali ke Riwayat
+      </button>
     </div>
   )
 
+  const canBatal = ['menunggu_pembayaran'].includes(booking.status)
+  const canBayar = booking.status === 'menunggu_pembayaran'
+
   return (
     <main className="max-w-lg mx-auto px-4 py-6">
-
       {/* Header */}
-      <div className="flex items-center gap-3 mb-5">
-        <button onClick={() => navigate('/riwayat')}
-          className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors">
-          <ArrowLeft size={18} />
+      <div className="flex items-center gap-3 mb-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
+        >
+          <ArrowLeft size={18} className="text-slate-600" />
         </button>
-        <div>
-          <h1 className="text-base font-bold text-slate-900">Detail Booking</h1>
-          <p className="text-xs text-slate-400 truncate max-w-[240px]">{booking.listingNama}</p>
-        </div>
+        <h1 className="text-xl font-bold text-slate-900">Detail Booking</h1>
       </div>
 
       {/* Status */}
-      <div className={`flex items-center gap-2 px-4 py-3 rounded-2xl border mb-4 ${colorStatus(booking.status).replace('text-', 'border-').replace('bg-', 'bg-')}`}>
-        <span className={`text-sm font-bold px-3 py-1 rounded-full ${colorStatus(booking.status)}`}>
+      <div className="flex items-center gap-2 mb-4">
+        <span className={`text-xs font-semibold px-3 py-1.5 rounded-full ${colorStatus(booking.status)}`}>
           {labelStatus(booking.status)}
         </span>
+        <span className="text-xs text-slate-300">#{booking.orderId || booking.id.slice(0, 8).toUpperCase()}</span>
       </div>
 
       {/* Info Kost */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-3">
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Kost</p>
-        <p className="font-bold text-slate-900">{booking.listingNama}</p>
-        <p className="text-sm text-slate-500 mt-0.5">{booking.listingAlamat}</p>
-        <p className="text-xs text-slate-400 mt-1">Pemilik: {booking.pemilikNama}</p>
-      </div>
+      <Card padding="md" className="mb-3">
+        <div className="flex items-start gap-2">
+          <MapPin size={14} className="text-amber-400 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-semibold text-slate-900 text-sm">{booking.listingNama}</p>
+            <p className="text-xs text-slate-500 mt-0.5">{booking.listingAlamat}</p>
+          </div>
+        </div>
+      </Card>
 
       {/* Detail Sewa */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-3">
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Detail Sewa</p>
-        <div className="space-y-2.5">
+      <Card padding="md" className="mb-3">
+        <h3 className="font-semibold text-slate-700 text-sm mb-3 flex items-center gap-1.5">
+          <CalendarDays size={14} className="text-amber-400" /> Detail Sewa
+        </h3>
+        <div className="flex flex-col gap-2">
           {[
-            { label: 'Tipe Sewa',   value: labelTipe(booking.tipeKamar) },
-            { label: 'Durasi',      value: `${booking.durasi} ${satuanTipe(booking.tipeKamar)}` },
-            { label: 'Check-in',    value: formatTanggal(booking.tanggalMulai) },
-            { label: 'Check-out',   value: formatTanggal(booking.tanggalSelesai) },
-            { label: 'Harga/Satuan',value: formatRupiah(booking.hargaSatuan) },
-            { label: 'Total Bayar', value: formatRupiah(booking.totalHarga), bold: true },
-          ].map(row => (
-            <div key={row.label} className="flex items-center justify-between text-sm">
-              <span className="text-slate-400">{row.label}</span>
-              <span className={row.bold ? 'font-extrabold text-amber-500' : 'font-medium text-slate-700'}>
-                {row.value}
-              </span>
+            { label: 'Tipe Sewa',  value: labelTipe(booking.tipeKamar) },
+            { label: 'Durasi',     value: `${booking.durasi} ${booking.tipeKamar === 'harian' ? 'hari' : booking.tipeKamar === 'mingguan' ? 'minggu' : 'bulan'}` },
+            { label: 'Check-in',  value: formatTanggal(booking.tanggalMulai)   },
+            { label: 'Check-out', value: formatTanggal(booking.tanggalSelesai) },
+          ].map((item, i) => (
+            <div key={i} className="flex justify-between gap-4 text-xs">
+              <span className="text-slate-400">{item.label}</span>
+              <span className="font-medium text-slate-700 text-right">{item.value}</span>
             </div>
           ))}
         </div>
-      </div>
+      </Card>
 
-      {/* Catatan penyewa */}
+      {/* Ringkasan Biaya */}
+      <Card padding="md" className="mb-3 bg-amber-50 border border-amber-100">
+        <h3 className="font-semibold text-slate-700 text-sm mb-3">Ringkasan Biaya</h3>
+        <div className="flex flex-col gap-1.5 text-xs">
+          <div className="flex justify-between text-slate-600">
+            <span>
+              {formatRupiah(booking.hargaSatuan)} ×{' '}
+              {booking.durasi}{' '}
+              {booking.tipeKamar === 'harian' ? 'hari' : booking.tipeKamar === 'mingguan' ? 'minggu' : 'bulan'}
+            </span>
+            <span>{formatRupiah(booking.hargaSatuan * booking.durasi)}</span>
+          </div>
+          <div className="border-t border-amber-200 pt-1.5 flex justify-between font-bold text-slate-900">
+            <span>Total</span>
+            <span className="text-amber-500 text-sm">{formatRupiah(booking.totalHarga)}</span>
+          </div>
+        </div>
+      </Card>
+
+      {/* Info Pemilik */}
+      <Card padding="md" className="mb-3">
+        <h3 className="font-semibold text-slate-700 text-sm mb-2 flex items-center gap-1.5">
+          <Phone size={13} className="text-amber-400" /> Kontak Pemilik
+        </h3>
+        <p className="text-sm font-medium text-slate-800">{booking.pemilikNama}</p>
+      </Card>
+
+      {/* Catatan */}
       {booking.catatanPenyewa && (
-        <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-3">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Catatan</p>
-          <p className="text-sm text-slate-600 leading-relaxed">{booking.catatanPenyewa}</p>
-        </div>
+        <Card padding="md" className="mb-3">
+          <h3 className="font-semibold text-slate-700 text-sm mb-1">Catatan Saya</h3>
+          <p className="text-xs text-slate-500 leading-relaxed">{booking.catatanPenyewa}</p>
+        </Card>
       )}
 
-      {/* Alasan batal */}
-      {booking.alasanBatal && (
-        <div className="bg-red-50 border border-red-100 rounded-2xl p-4 mb-3">
-          <p className="text-xs font-semibold text-red-400 uppercase tracking-wide mb-1">Alasan Pembatalan</p>
-          <p className="text-sm text-red-600">{booking.alasanBatal}</p>
-        </div>
+      {/* Alasan Batal */}
+      {booking.status === 'dibatalkan' && booking.alasanBatal && (
+        <Card padding="md" className="mb-4 bg-red-50 border border-red-100">
+          <p className="text-xs font-semibold text-red-600 mb-1">Alasan Pembatalan</p>
+          <p className="text-xs text-red-500">{booking.alasanBatal}</p>
+        </Card>
       )}
 
-      {/* Error */}
       {error && (
-        <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-4 py-3 rounded-xl mb-4">
-          <AlertCircle size={15} className="flex-shrink-0" /> {error}
+        <div className="bg-red-50 border border-red-100 rounded-xl px-3 py-2.5 text-xs text-red-600 mb-4">
+          {error}
         </div>
       )}
 
-      {/* Aksi */}
-      <div className="flex flex-col gap-3 mt-2">
-        {booking.status === 'menunggu_pembayaran' && (
-          <Button variant="primary" size="lg" fullWidth
-            onClick={() => navigate(`/payment/${booking.id}`)}>
+      {/* Action Buttons */}
+      <div className="flex flex-col gap-3">
+        {canBayar && (
+          <Button variant="primary" size="lg" fullWidth onClick={() => navigate(`/payment/${booking.id}`)}>
             Bayar Sekarang
           </Button>
         )}
-        {bolehBatal && (
-          <Button variant="ghost" size="lg" fullWidth
-            onClick={() => setBatalModal(true)}
-            className="text-red-500 hover:bg-red-50 border-red-100">
-            Batalkan Booking
+
+        <Button
+          variant="ghost"
+          size="md"
+          fullWidth
+          onClick={() => navigate(`/booking/bukti/${booking.id}`)}
+        >
+          <FileText size={15} /> Lihat Bukti Booking
+        </Button>
+
+        {canBatal && (
+          <Button variant="danger" size="lg" fullWidth onClick={() => setBatalModal(true)}>
+            <XCircle size={16} /> Batalkan Booking
           </Button>
         )}
       </div>
 
-      {/* Modal Konfirmasi Batal */}
-      {batalModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-white w-full max-w-sm rounded-3xl p-5 shadow-xl">
-            <h3 className="font-bold text-slate-900 mb-1">Batalkan Booking?</h3>
-            <p className="text-sm text-slate-500 mb-4">
-              Tindakan ini tidak dapat dibatalkan. Dana yang sudah dibayar akan diproses refund sesuai kebijakan.
-            </p>
-            <textarea
-              value={alasan}
-              onChange={e => setAlasan(e.target.value)}
-              placeholder="Alasan pembatalan (opsional)..."
-              rows={3}
-              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 resize-none focus:outline-none focus:border-red-300 focus:ring-2 focus:ring-red-100 mb-4 transition-all"
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={() => setBatalModal(false)}
-                className="flex-1 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                onClick={handleBatal}
-                disabled={processing}
-                className="flex-1 py-3 rounded-xl bg-red-500 hover:bg-red-600 disabled:bg-red-200 text-white text-sm font-bold transition-colors"
-              >
-                {processing ? 'Memproses...' : 'Ya, Batalkan'}
-              </button>
-            </div>
-          </div>
+      {/* Modal Batal */}
+      <Modal isOpen={batalModal} onClose={() => setBatalModal(false)} title="Batalkan Booking">
+        <p className="text-sm text-slate-600 mb-3">
+          Kamu akan membatalkan booking <span className="font-semibold">{booking.listingNama}</span>.
+        </p>
+        <textarea
+          value={alasanBatal}
+          onChange={e => setAlasanBatal(e.target.value)}
+          placeholder="Tuliskan alasan pembatalan..."
+          rows={3}
+          className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-400 mb-4"
+        />
+        <div className="flex gap-3">
+          <Button variant="ghost" size="md" fullWidth onClick={() => setBatalModal(false)}>
+            Batal
+          </Button>
+          <Button variant="danger" size="md" fullWidth loading={processing} onClick={handleBatal}>
+            Ya, Batalkan
+          </Button>
         </div>
-      )}
-
+      </Modal>
     </main>
   )
 })
