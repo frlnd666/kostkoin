@@ -31,6 +31,7 @@ import BookingMasukPage   from './pages/pemilik/BookingMasukPage'     // ← BAR
 import AdminDashboard     from './pages/admin/AdminDashboard'
 
 // Notifikasi
+import { unlockAudio }  from './utils/notifSound'
 import NotifikasiPage     from './pages/shared/NotifikasiPage'               // ← BARU
 
 // Store & Service
@@ -55,6 +56,11 @@ function App() {
     return () => unsubscribe()
   }, [])
 
+  
+  useEffect(() => {
+  unlockAudio()
+}, [])
+  
   return (
     <BrowserRouter>
       <div className="min-h-screen flex flex-col bg-slate-50">
