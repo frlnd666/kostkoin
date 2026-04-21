@@ -1,40 +1,86 @@
 // src/utils/notifSound.ts
 
-const ctx = (() => {
-  try { return new (window.AudioContext || (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext!)() }
-  catch { return null }
-})()
+/**
+ * Web Audio API — tidak butuh file audio eksternal.
+ * Semua suara di-generate langsung via oscillator.
+ */
 
-const playTone = (freq: number, duration: number, gain: number, offset: number) => {
-  if (!ctx) return
-  const osc = ctx.createOscillator()
-  const vol = ctx.createGain()
-  osc.connect(vol)
-  vol.connect(ctx.destination)
-  osc.frequency.value = freq
-  osc.type            = 'sine'
-  vol.gain.setValueAtTime(0, ctx.currentTime + offset)
-  vol.gain.linearRampToValueAtTime(gain, ctx.currentTime + offset + 0.01)
-  vol.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + duration)
-  osc.start(ctx.currentTime + offset)
-  osc.stop(ctx.currentTime + offset + duration + 0.05)
+const ctx = (): AudioContext => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const AudioCtx = window.AudioContext ?? (window as any).webkitAudioContext
+  return new AudioCtx()
 }
 
-// Suara "ting-ting" lembut untuk notif baru
+// ── Suara notifikasi umum (ding pendek) ──────────────────────
 export const playNotifSound = () => {
-  playTone(880, 0.15, 0.3, 0)
-  playTone(1100, 0.15, 0.2, 0.18)
+  try {
+    const ac  = ctx()
+    const osc = ac.createOscillator()
+    const gain = ac.createGain()
+
+    osc.connect(gain)
+    gain.connect(ac.destination)
+
+    osc.type      = 'sine'
+    osc.frequency.setValueAtTime(880, ac.currentTime)          // A5
+    osc.frequency.exponentialRampToValueAtTime(660, ac.currentTime + 0.15) // E5
+
+    gain.gain.setValueAtTime(0.4, ac.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.4)
+
+    osc.start(ac.currentTime)
+    osc.stop(ac.currentTime + 0.4)
+  } catch (_) { /* silent fail */ }
 }
 
-// Suara sukses (booking/payment berhasil)
+// ── Suara pembayaran sukses (dua nada naik) ──────────────────
 export const playSuccessSound = () => {
-  playTone(523, 0.1, 0.2, 0)
-  playTone(659, 0.1, 0.2, 0.12)
-  playTone(784, 0.2, 0.3, 0.24)
+  try {
+    const ac = ctx()
+
+    const notes = [
+      { freq: 523.25, start: 0,    dur: 0.15 }, // C5
+      { freq: 659.25, start: 0.15, dur: 0.15 }, // E5
+      { freq: 783.99, start: 0.30, dur: 0.25 }, // G5
+    ]
+
+    notes.forEach(({ freq, start, dur }) => {
+      const osc  = ac.createOscillator()
+      const gain = ac.createGain()
+
+      osc.connect(gain)
+      gain.connect(ac.destination)
+
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(freq, ac.currentTime + start)
+
+      gain.gain.setValueAtTime(0.35, ac.currentTime + start)
+      gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + start + dur)
+
+      osc.start(ac.currentTime + start)
+      osc.stop(ac.currentTime + start + dur)
+    })
+  } catch (_) { /* silent fail */ }
 }
 
-// Suara error/gagal
+// ── Suara error/gagal (nada turun) ───────────────────────────
 export const playErrorSound = () => {
-  playTone(300, 0.3, 0.3, 0)
-  playTone(250, 0.3, 0.2, 0.2)
+  try {
+    const ac   = ctx()
+    const osc  = ac.createOscillator()
+    const gain = ac.createGain()
+
+    osc.connect(gain)
+    gain.connect(ac.destination)
+
+    osc.type = 'sawtooth'
+    osc.frequency.setValueAtTime(300, ac.currentTime)
+    osc.frequency.exponentialRampToValueAtTime(150, ac.currentTime + 0.3)
+
+    gain.gain.setValueAtTime(0.25, ac.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.35)
+
+    osc.start(ac.currentTime)
+    osc.stop(ac.currentTime + 0.35)
+  } catch (_) { /* silent fail */ }
 }
