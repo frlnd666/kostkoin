@@ -63,6 +63,33 @@ export const playSuccessSound = () => {
   } catch (_) { /* silent fail */ }
 }
 
+// ── Suara pending/menunggu (nada datar berulang) ─────────────
+export const playPendingSound = () => {
+  try {
+    const ac = ctx()
+
+    // Dua "tik" pendek dengan nada netral
+    const ticks = [0, 0.2]
+
+    ticks.forEach(start => {
+      const osc  = ac.createOscillator()
+      const gain = ac.createGain()
+
+      osc.connect(gain)
+      gain.connect(ac.destination)
+
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(440, ac.currentTime + start) // A4 — netral
+
+      gain.gain.setValueAtTime(0.25, ac.currentTime + start)
+      gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + start + 0.12)
+
+      osc.start(ac.currentTime + start)
+      osc.stop(ac.currentTime + start + 0.12)
+    })
+  } catch (_) { /* silent fail */ }
+}
+
 // ── Suara error/gagal (nada turun) ───────────────────────────
 export const playErrorSound = () => {
   try {
