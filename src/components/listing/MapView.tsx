@@ -1,7 +1,9 @@
 // src/components/listing/MapView.tsx
 
 import { useEffect, useRef } from 'react'
-// Tipe global Leaflet diambil dari src/types/leaflet.d.ts (otomatis)
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type L = any
 
 interface MapViewProps {
   lat:     number
@@ -12,38 +14,45 @@ interface MapViewProps {
 
 const MapView = ({ lat, lng, nama, alamat }: MapViewProps) => {
   const mapRef      = useRef<HTMLDivElement>(null)
-  const mapInstance = useRef<LMap | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapInstance = useRef<any>(null)
 
   useEffect(() => {
     if (!mapRef.current || mapInstance.current) return
 
     const initMap = () => {
       if (!mapRef.current) return
-      const L   = window.L
-      const map = L.map(mapRef.current, {}).setView([lat, lng], 16)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const L: L = (window as any).L
 
+      const map = L.map(mapRef.current, {}).setView([lat, lng], 16)
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap',
-        maxZoom: 19,
+        attribution: '© OpenStreetMap', maxZoom: 19,
       }).addTo(map)
 
       L.marker([lat, lng], {
         icon: L.divIcon({
           className:   '',
-          html:        `<div style="width:36px;height:36px;border-radius:50% 50% 50% 0;background:#f59e0b;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);transform:rotate(-45deg);"></div>`,
+          html:        `<div style="width:36px;height:36px;border-radius:50% 50% 50% 0;
+                          background:#f59e0b;border:3px solid #fff;
+                          box-shadow:0 2px 8px rgba(0,0,0,0.3);
+                          transform:rotate(-45deg);"></div>`,
           iconSize:    [36, 36],
           iconAnchor:  [18, 36],
           popupAnchor: [0, -36],
         }),
       })
         .addTo(map)
-        .bindPopup(`<b>${nama}</b>${alamat ? `<br/><span style="font-size:12px;color:#666">${alamat}</span>` : ''}`)
+        .bindPopup(
+          `<b>${nama}</b>${alamat
+            ? `<br/><span style="font-size:12px;color:#666">${alamat}</span>`
+            : ''}`
+        )
         .openPopup()
 
       mapInstance.current = map
     }
 
-    // Load CSS
     if (!document.getElementById('leaflet-css')) {
       const link  = document.createElement('link')
       link.id     = 'leaflet-css'
@@ -52,8 +61,8 @@ const MapView = ({ lat, lng, nama, alamat }: MapViewProps) => {
       document.head.appendChild(link)
     }
 
-    // Load JS atau langsung init
-    if (window.L) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((window as any).L) {
       initMap()
     } else if (!document.getElementById('leaflet-js')) {
       const script  = document.createElement('script')
@@ -63,7 +72,8 @@ const MapView = ({ lat, lng, nama, alamat }: MapViewProps) => {
       document.head.appendChild(script)
     } else {
       const check = setInterval(() => {
-        if (window.L) { clearInterval(check); initMap() }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((window as any).L) { clearInterval(check); initMap() }
       }, 100)
     }
 
