@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { MapPin, Navigation, CheckCircle } from 'lucide-react'
-// Tipe global Leaflet diambil dari src/types/leaflet.d.ts (otomatis)
+
+// ── Tipe internal Leaflet (akses via window.L CDN) ──────────────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type L = any
 
 interface LocationPickerProps {
   lat?:     number
@@ -12,8 +15,11 @@ interface LocationPickerProps {
 
 const LocationPicker = ({ lat, lng, onChange }: LocationPickerProps) => {
   const mapRef      = useRef<HTMLDivElement>(null)
-  const mapInstance = useRef<LMap | null>(null)
-  const markerRef   = useRef<LMarker | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapInstance = useRef<any>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const markerRef   = useRef<any>(null)
+
   const [coords,     setCoords]     = useState<{ lat: number; lng: number } | null>(
     lat && lng ? { lat, lng } : null
   )
@@ -23,7 +29,7 @@ const LocationPicker = ({ lat, lng, onChange }: LocationPickerProps) => {
   const defaultLat = lat ?? -6.1201
   const defaultLng = lng ?? 106.1504
 
-  // ── Load Leaflet CSS + JS via CDN ──
+  // ── Load Leaflet CSS + JS ──────────────────────────────────────────
   useEffect(() => {
     if (!document.getElementById('leaflet-css')) {
       const link  = document.createElement('link')
@@ -32,17 +38,18 @@ const LocationPicker = ({ lat, lng, onChange }: LocationPickerProps) => {
       link.href   = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
       document.head.appendChild(link)
     }
-    if (window.L) {
-      setMapReady(true)
-      return
-    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((window as any).L) { setMapReady(true); return }
+
     if (document.getElementById('leaflet-js')) {
-      // Script sudah ada, tunggu load
       const check = setInterval(() => {
-        if (window.L) { clearInterval(check); setMapReady(true) }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((window as any).L) { clearInterval(check); setMapReady(true) }
       }, 100)
       return () => clearInterval(check)
     }
+
     const script  = document.createElement('script')
     script.id     = 'leaflet-js'
     script.src    = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
@@ -50,23 +57,26 @@ const LocationPicker = ({ lat, lng, onChange }: LocationPickerProps) => {
     document.head.appendChild(script)
   }, [])
 
-  // ── Init peta setelah Leaflet siap ──
+  // ── Init peta setelah Leaflet siap ────────────────────────────────
   useEffect(() => {
     if (!mapReady || !mapRef.current || mapInstance.current) return
 
-    const L   = window.L
-    const map = L.map(mapRef.current, {}).setView([defaultLat, defaultLng], 13)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const L: L = (window as any).L
 
+    const map = L.map(mapRef.current, {}).setView([defaultLat, defaultLng], 13)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap',
-      maxZoom: 19,
+      attribution: '© OpenStreetMap', maxZoom: 19,
     }).addTo(map)
 
-    const makeIcon = (): LIcon => L.divIcon({
-      className:   '',
-      html:        `<div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:#f59e0b;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.4);transform:rotate(-45deg);"></div>`,
-      iconSize:    [28, 28],
-      iconAnchor:  [14, 28],
+    const makeIcon = () => L.divIcon({
+      className:  '',
+      html:       `<div style="width:28px;height:28px;border-radius:50% 50% 50% 0;
+                    background:#f59e0b;border:3px solid #fff;
+                    box-shadow:0 2px 8px rgba(0,0,0,0.4);
+                    transform:rotate(-45deg);"></div>`,
+      iconSize:   [28, 28],
+      iconAnchor: [14, 28],
     })
 
     const placeMarker = (cLat: number, cLng: number) => {
@@ -87,7 +97,9 @@ const LocationPicker = ({ lat, lng, onChange }: LocationPickerProps) => {
 
     if (lat && lng) placeMarker(lat, lng)
 
-    map.on('click', (e) => placeMarker(e.latlng.lat, e.latlng.lng))
+    map.on('click', (e: { latlng: { lat: number; lng: number } }) => {
+      placeMarker(e.latlng.lat, e.latlng.lng)
+    })
 
     mapInstance.current = map
 
@@ -99,20 +111,23 @@ const LocationPicker = ({ lat, lng, onChange }: LocationPickerProps) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapReady])
 
-  // ── GPS ──
+  // ── GPS ───────────────────────────────────────────────────────────
   const handleGPS = () => {
     if (!navigator.geolocation || !mapInstance.current) return
     setLoadingGPS(true)
     navigator.geolocation.getCurrentPosition(
       ({ coords: c }) => {
-        const map = mapInstance.current!
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const L: L = (window as any).L
+        const map  = mapInstance.current
+
         map.setView([c.latitude, c.longitude], 17)
 
         if (markerRef.current) {
           markerRef.current.setLatLng([c.latitude, c.longitude])
         } else {
-          const m = window.L.marker([c.latitude, c.longitude], {
-            icon: window.L.divIcon({
+          const m = L.marker([c.latitude, c.longitude], {
+            icon: L.divIcon({
               className:  '',
               html:       `<div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:#f59e0b;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.4);transform:rotate(-45deg);"></div>`,
               iconSize:   [28, 28],
