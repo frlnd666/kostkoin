@@ -9,7 +9,7 @@ import { formatRupiah }                 from '../../utils/format'
 import Card                             from '../../components/ui/Card'
 import Button                           from '../../components/ui/Button'
 import Spinner                          from '../../components/ui/Spinner'
-import { playSuccessSound, playErrorSound } from '../../utils/notifSound'
+import { playSuccessSound, playErrorSound, playPendingSound } from '../../utils/notifSound'
 
 declare global {
   interface Window {
@@ -72,6 +72,7 @@ const PaymentPage = memo(() => {
   setPaying(false)
 },
         onPending: () => {
+          playPendingSound()
           setBooking(prev => prev ? { ...prev, status: 'menunggu_pembayaran' as BookingStatus } : prev)
           setPaying(false)
         },
