@@ -67,17 +67,17 @@ const PaymentPage = memo(() => {
 
       window.snap.pay(token, {
         onSuccess: () => {
-  playSuccessSound()   // ← tambahkan ini
+  void playSuccessSound()   // ← tambahkan ini
   setBooking(prev => prev ? { ...prev, status: 'sudah_dibayar' as BookingStatus } : prev)
   setPaying(false)
 },
         onPending: () => {
-          playPendingSound()
+          void playPendingSound()
           setBooking(prev => prev ? { ...prev, status: 'menunggu_pembayaran' as BookingStatus } : prev)
           setPaying(false)
         },
         onError: (_result: Record<string, string>) => {
-    playErrorSound()
+    void playErrorSound()
     setError('Pembayaran gagal, silakan coba lagi.')
     setPaying(false)
   },
