@@ -91,22 +91,22 @@ const NotifikasiPage = memo(() => {
 
   useEffect(() => {
   if (!user?.uid) return
+
   let initialized = false
-  let prevCount   = 0
+  let prevIds     = new Set<string>()
 
   const unsub = listenNotifications(user.uid, data => {
-    if (initialized && data.length > prevCount) {
-      // Ada notif baru masuk → bunyi
-      const newUnread = data.filter(n => !n.isRead).length
-      if (newUnread > notifs.filter(n => !n.isRead).length) {
-        playNotifSound()
-      }
+    if (initialized) {
+      const newNotif = data.find(n => !prevIds.has(n.id) && !n.isRead)
+      if (newNotif) playNotifSound()
     }
-    prevCount   = data.length
+
+    prevIds     = new Set(data.map(n => n.id))
     initialized = true
     setNotifs(data)
     setLoading(false)
   })
+
   return () => unsub()
 }, [user?.uid])
 
