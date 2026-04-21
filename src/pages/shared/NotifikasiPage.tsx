@@ -98,7 +98,7 @@ const NotifikasiPage = memo(() => {
   const unsub = listenNotifications(user.uid, data => {
     if (initialized) {
       const newNotif = data.find(n => !prevIds.has(n.id) && !n.isRead)
-      if (newNotif) playNotifSound()
+      if (newNotif) void playNotifSound()
     }
 
     prevIds     = new Set(data.map(n => n.id))
