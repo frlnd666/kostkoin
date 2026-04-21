@@ -1,113 +1,105 @@
 // src/utils/notifSound.ts
 
-/**
- * Web Audio API — tidak butuh file audio eksternal.
- * Semua suara di-generate langsung via oscillator.
- */
+// ── Singleton AudioContext ─────────────────────────────────────────
+// Dibuat sekali, di-resume setiap kali mau play (handle browser autoplay policy)
+let _ac: AudioContext | null = null
 
-const ctx = (): AudioContext => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const AudioCtx = window.AudioContext ?? (window as any).webkitAudioContext
-  return new AudioCtx()
+const getAC = (): AudioContext => {
+  if (!_ac) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const Ctor = window.AudioContext ?? (window as any).webkitAudioContext
+    _ac = new Ctor() as AudioContext
+  }
+  return _ac
 }
 
-// ── Suara notifikasi umum (ding pendek) ──────────────────────
-export const playNotifSound = () => {
-  try {
-    const ac  = ctx()
-    const osc = ac.createOscillator()
-    const gain = ac.createGain()
-
-    osc.connect(gain)
-    gain.connect(ac.destination)
-
-    osc.type      = 'sine'
-    osc.frequency.setValueAtTime(880, ac.currentTime)          // A5
-    osc.frequency.exponentialRampToValueAtTime(660, ac.currentTime + 0.15) // E5
-
-    gain.gain.setValueAtTime(0.4, ac.currentTime)
-    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.4)
-
-    osc.start(ac.currentTime)
-    osc.stop(ac.currentTime + 0.4)
-  } catch (_) { /* silent fail */ }
+// Pastikan AudioContext tidak suspended sebelum play
+const resumeAC = async (): Promise<AudioContext> => {
+  const ac = getAC()
+  if (ac.state === 'suspended') await ac.resume()
+  return ac
 }
 
-// ── Suara pembayaran sukses (dua nada naik) ──────────────────
-export const playSuccessSound = () => {
-  try {
-    const ac = ctx()
-
-    const notes = [
-      { freq: 523.25, start: 0,    dur: 0.15 }, // C5
-      { freq: 659.25, start: 0.15, dur: 0.15 }, // E5
-      { freq: 783.99, start: 0.30, dur: 0.25 }, // G5
-    ]
-
-    notes.forEach(({ freq, start, dur }) => {
-      const osc  = ac.createOscillator()
-      const gain = ac.createGain()
-
-      osc.connect(gain)
-      gain.connect(ac.destination)
-
-      osc.type = 'sine'
-      osc.frequency.setValueAtTime(freq, ac.currentTime + start)
-
-      gain.gain.setValueAtTime(0.35, ac.currentTime + start)
-      gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + start + dur)
-
-      osc.start(ac.currentTime + start)
-      osc.stop(ac.currentTime + start + dur)
-    })
-  } catch (_) { /* silent fail */ }
+// ── Unlock AudioContext on first user interaction ─────────────────
+// Dipanggil sekali saat app mount — memastikan AC aktif setelah tap/klik
+let _unlocked = false
+export const unlockAudio = () => {
+  if (_unlocked) return
+  _unlocked = true
+  const unlock = async () => {
+    await resumeAC()
+    document.removeEventListener('touchstart', unlock)
+    document.removeEventListener('touchend',   unlock)
+    document.removeEventListener('click',      unlock)
+    document.removeEventListener('keydown',    unlock)
+  }
+  document.addEventListener('touchstart', unlock, { once: true })
+  document.addEventListener('touchend',   unlock, { once: true })
+  document.addEventListener('click',      unlock, { once: true })
+  document.addEventListener('keydown',    unlock, { once: true })
 }
 
-// ── Suara pending/menunggu (nada datar berulang) ─────────────
-export const playPendingSound = () => {
-  try {
-    const ac = ctx()
+// ── Helper: buat satu nada ────────────────────────────────────────
+const playTone = (
+  ac:       AudioContext,
+  type:     OscillatorType,
+  freq:     number,
+  freqEnd:  number,
+  volume:   number,
+  startAt:  number,
+  duration: number,
+) => {
+  const osc  = ac.createOscillator()
+  const gain = ac.createGain()
 
-    // Dua "tik" pendek dengan nada netral
-    const ticks = [0, 0.2]
+  osc.connect(gain)
+  gain.connect(ac.destination)
 
-    ticks.forEach(start => {
-      const osc  = ac.createOscillator()
-      const gain = ac.createGain()
+  osc.type = type
+  osc.frequency.setValueAtTime(freq, ac.currentTime + startAt)
+  if (freqEnd !== freq) {
+    osc.frequency.exponentialRampToValueAtTime(freqEnd, ac.currentTime + startAt + duration)
+  }
 
-      osc.connect(gain)
-      gain.connect(ac.destination)
+  gain.gain.setValueAtTime(volume, ac.currentTime + startAt)
+  gain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + startAt + duration)
 
-      osc.type = 'sine'
-      osc.frequency.setValueAtTime(440, ac.currentTime + start) // A4 — netral
-
-      gain.gain.setValueAtTime(0.25, ac.currentTime + start)
-      gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + start + 0.12)
-
-      osc.start(ac.currentTime + start)
-      osc.stop(ac.currentTime + start + 0.12)
-    })
-  } catch (_) { /* silent fail */ }
+  osc.start(ac.currentTime + startAt)
+  osc.stop(ac.currentTime + startAt + duration + 0.05)
 }
 
-// ── Suara error/gagal (nada turun) ───────────────────────────
-export const playErrorSound = () => {
+// ── Suara notifikasi umum (ding pendek) ──────────────────────────
+export const playNotifSound = async () => {
   try {
-    const ac   = ctx()
-    const osc  = ac.createOscillator()
-    const gain = ac.createGain()
+    const ac = await resumeAC()
+    playTone(ac, 'sine', 880, 660, 0.4, 0,    0.15)
+    playTone(ac, 'sine', 660, 660, 0.2, 0.15, 0.25)
+  } catch (_) { /* silent */ }
+}
 
-    osc.connect(gain)
-    gain.connect(ac.destination)
+// ── Suara sukses (3 nada naik — C5 E5 G5) ───────────────────────
+export const playSuccessSound = async () => {
+  try {
+    const ac = await resumeAC()
+    playTone(ac, 'sine', 523.25, 523.25, 0.35, 0,    0.14)
+    playTone(ac, 'sine', 659.25, 659.25, 0.35, 0.16, 0.14)
+    playTone(ac, 'sine', 783.99, 783.99, 0.40, 0.32, 0.28)
+  } catch (_) { /* silent */ }
+}
 
-    osc.type = 'sawtooth'
-    osc.frequency.setValueAtTime(300, ac.currentTime)
-    osc.frequency.exponentialRampToValueAtTime(150, ac.currentTime + 0.3)
+// ── Suara pending (2 tik netral — A4) ────────────────────────────
+export const playPendingSound = async () => {
+  try {
+    const ac = await resumeAC()
+    playTone(ac, 'sine', 440, 440, 0.25, 0,    0.12)
+    playTone(ac, 'sine', 440, 440, 0.20, 0.22, 0.12)
+  } catch (_) { /* silent */ }
+}
 
-    gain.gain.setValueAtTime(0.25, ac.currentTime)
-    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.35)
-
-    osc.start(ac.currentTime)
-    osc.stop(ac.currentTime + 0.35)
-  } catch (_) { /* silent fail */ }
+// ── Suara error (nada turun — sawtooth) ──────────────────────────
+export const playErrorSound = async () => {
+  try {
+    const ac = await resumeAC()
+    playTone(ac, 'sawtooth', 300, 150, 0.25, 0, 0.35)
+  } catch (_) { /* silent */ }
 }
