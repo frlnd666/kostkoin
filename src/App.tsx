@@ -1,3 +1,5 @@
+// src/App.tsx
+
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect }      from 'react'
 
@@ -19,27 +21,32 @@ import RegisterPage       from './pages/auth/RegisterPage'
 import ProfilPage         from './pages/penyewa/ProfilPage'
 import BookingPage        from './pages/penyewa/BookingPage'
 import PaymentPage        from './pages/penyewa/PaymentPage'
-import RiwayatPage        from './pages/penyewa/RiwayatPage'          // ← BARU
-import DetailBookingPage  from './pages/penyewa/DetailBookingPage'    // ← BARU
+import RiwayatPage        from './pages/penyewa/RiwayatPage'
+import DetailBookingPage  from './pages/penyewa/DetailBookingPage'
 
 // Pemilik
 import DashboardPemilik   from './pages/pemilik/DashboardPemilik'
 import TambahListing      from './pages/pemilik/TambahListing'
-import BookingMasukPage   from './pages/pemilik/BookingMasukPage'     // ← BARU (ganti RiwayatBooking)
+import BookingMasukPage   from './pages/pemilik/BookingMasukPage'
 
 // Admin
 import AdminDashboard     from './pages/admin/AdminDashboard'
 
 // Notifikasi
-import { unlockAudio }  from './utils/notifSound'
-import NotifikasiPage     from './pages/shared/NotifikasiPage'               // ← BARU
+import NotifikasiPage     from './pages/shared/NotifikasiPage'
 
 // Store & Service
-import { useAuthStore }          from './store/authStore'
+import { useAuthStore }             from './store/authStore'
 import { onAuthChange, getUserData } from './services/authService'
+
+// ── Audio unlock ── ← TAMBAHKAN INI
+import { unlockAudio } from './utils/notifSound'
 
 function App() {
   const { setUser, setLoading, setInitialized } = useAuthStore()
+
+  // ── Unlock AudioContext saat pertama kali user tap/klik ── ← TAMBAHKAN INI
+  useEffect(() => { unlockAudio() }, [])
 
   useEffect(() => {
     const unsubscribe = onAuthChange(async firebaseUser => {
@@ -56,11 +63,6 @@ function App() {
     return () => unsubscribe()
   }, [])
 
-  
-  useEffect(() => {
-  unlockAudio()
-}, [])
-  
   return (
     <BrowserRouter>
       <div className="min-h-screen flex flex-col bg-slate-50">
@@ -79,66 +81,40 @@ function App() {
 
             {/* ── Penyewa ────────────────────────────────── */}
             <Route path="/profil" element={
-              <ProtectedRoute>
-                <ProfilPage />
-              </ProtectedRoute>
+              <ProtectedRoute><ProfilPage /></ProtectedRoute>
             } />
-
             <Route path="/booking/:id" element={
-              <ProtectedRoute allowedRoles={['penyewa']}>
-                <BookingPage />
-              </ProtectedRoute>
+              <ProtectedRoute allowedRoles={['penyewa']}><BookingPage /></ProtectedRoute>
             } />
-
             <Route path="/payment/:id" element={
-              <ProtectedRoute allowedRoles={['penyewa']}>
-                <PaymentPage />
-              </ProtectedRoute>
+              <ProtectedRoute allowedRoles={['penyewa']}><PaymentPage /></ProtectedRoute>
             } />
-
             <Route path="/riwayat" element={
-              <ProtectedRoute allowedRoles={['penyewa']}>
-                <RiwayatPage />
-              </ProtectedRoute>
+              <ProtectedRoute allowedRoles={['penyewa']}><RiwayatPage /></ProtectedRoute>
             } />
-
             <Route path="/booking/detail/:id" element={
-              <ProtectedRoute allowedRoles={['penyewa']}>
-                <DetailBookingPage />
-              </ProtectedRoute>
+              <ProtectedRoute allowedRoles={['penyewa']}><DetailBookingPage /></ProtectedRoute>
             } />
 
             {/* ── Pemilik ────────────────────────────────── */}
             <Route path="/pemilik/dashboard" element={
-              <ProtectedRoute allowedRoles={['pemilik']}>
-                <DashboardPemilik />
-              </ProtectedRoute>
+              <ProtectedRoute allowedRoles={['pemilik']}><DashboardPemilik /></ProtectedRoute>
             } />
-
             <Route path="/pemilik/tambah" element={
-              <ProtectedRoute allowedRoles={['pemilik']}>
-                <TambahListing />
-              </ProtectedRoute>
+              <ProtectedRoute allowedRoles={['pemilik']}><TambahListing /></ProtectedRoute>
             } />
-
             <Route path="/pemilik/booking" element={
-              <ProtectedRoute allowedRoles={['pemilik']}>
-                <BookingMasukPage />
-              </ProtectedRoute>
+              <ProtectedRoute allowedRoles={['pemilik']}><BookingMasukPage /></ProtectedRoute>
             } />
 
             {/* ── Admin ──────────────────────────────────── */}
             <Route path="/admin/dashboard" element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <AdminDashboard />
-              </ProtectedRoute>
+              <ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>
             } />
 
-            {/* ── Notifikasi (semua role login) ───────────── */}
+            {/* ── Notifikasi ──────────────────────────────── */}
             <Route path="/notifikasi" element={
-              <ProtectedRoute>
-                <NotifikasiPage />
-              </ProtectedRoute>
+              <ProtectedRoute><NotifikasiPage /></ProtectedRoute>
             } />
 
             {/* ── Fallback ───────────────────────────────── */}
