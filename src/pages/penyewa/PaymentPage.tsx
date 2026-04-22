@@ -51,7 +51,7 @@ const PaymentPage = memo(() => {
   useEffect(() => {
     if (!id) return
     setLoading(true)
-    const unsub = listenBookingById(id, (data) => {
+    const unsub = listenBookingById(id, (data: Booking | null) => {
       setBooking(data)
       setLoading(false)
     })
