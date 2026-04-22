@@ -19,7 +19,8 @@ export const createSnapToken = async (payload: {
 }
 
 export const checkPaymentStatus = async (orderId: string): Promise<string> => {
-  const res = await fetch(`/api/payment/status/${orderId}`) // orderId = "KK-GPXEKH9E-..."
+  // ✅ Tambahkan BACKEND_URL — sebelumnya relative URL, hit Vercel bukan backend
+  const res  = await fetch(`${BACKEND_URL}/api/payment/status/${orderId}`)
   const data = await res.json()
   if (!res.ok) throw new Error(data.error ?? 'Gagal cek status')
   return data.status
