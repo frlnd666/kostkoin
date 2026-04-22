@@ -2,15 +2,14 @@ import { memo, useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate }            from 'react-router-dom'
 import { CheckCircle, XCircle, Clock, AlertCircle, RefreshCw } from 'lucide-react'
 import type { ReactElement }                 from 'react'
-import { listenBookingById, konfirmasiPembayaran } from '../services/bookingService'
-import { createSnapToken, checkPaymentStatus }     from '../services/paymentService'
-import type { Booking, BookingStatus, PembayaranInfo } from '../types/booking'
-import { formatRupiah }   from '../utils/format'
-import { Card }           from '../components/ui/Card'
-import { Button }         from '../components/ui/Button'
-import { Spinner }        from '../components/ui/Spinner'
-import { playSuccessSound, playErrorSound, playPendingSound } from '../utils/notifSound'
-
+import { listenBookingById, konfirmasiPembayaran } from '../../services/bookingService'
+import { createSnapToken, checkPaymentStatus }     from '../../services/paymentService'
+import type { Booking, BookingStatus, PembayaranInfo } from '../../types/booking'
+import { formatRupiah }   from '../../utils/format'
+import { Card }           from '../../components/ui/Card'
+import { Button }         from '../../components/ui/Button'
+import { Spinner }        from '../../components/ui/Spinner'
+import { playSuccessSound, playErrorSound, playPendingSound } from '../../utils/notifSound'
 declare global {
   interface Window {
     snap: {
