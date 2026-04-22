@@ -1,24 +1,24 @@
-import { memo, useEffect, useState }    from 'react'
-import { useParams, useNavigate }       from 'react-router-dom'
+import { memo, useEffect, useRef, useState } from 'react'
+import { useParams, useNavigate }            from 'react-router-dom'
 import { CheckCircle, XCircle, Clock, AlertCircle, RefreshCw } from 'lucide-react'
-import type { ReactElement }            from 'react'
-import { getBookingById }               from '../../services/bookingService'
-import { createSnapToken, checkPaymentStatus } from '../../services/paymentService'
-import type { Booking, BookingStatus }  from '../../types/booking'
-import { formatRupiah }                 from '../../utils/format'
-import Card                             from '../../components/ui/Card'
-import Button                           from '../../components/ui/Button'
-import Spinner                          from '../../components/ui/Spinner'
-import { playSuccessSound, playErrorSound, playPendingSound } from '../../utils/notifSound'
+import type { ReactElement }                 from 'react'
+import { listenBookingById, konfirmasiPembayaran } from '../services/bookingService'
+import { createSnapToken, checkPaymentStatus }     from '../services/paymentService'
+import type { Booking, BookingStatus, PembayaranInfo } from '../types/booking'
+import { formatRupiah }   from '../utils/format'
+import { Card }           from '../components/ui/Card'
+import { Button }         from '../components/ui/Button'
+import { Spinner }        from '../components/ui/Spinner'
+import { playSuccessSound, playErrorSound, playPendingSound } from '../utils/notifSound'
 
 declare global {
   interface Window {
     snap: {
       pay: (token: string, options: {
-        onSuccess: (result: Record<string, string>) => void
-        onPending: (result: Record<string, string>) => void
-        onError:   (result: Record<string, string>) => void
-        onClose:   () => void
+        onSuccess:  (result: Record<string, string>) => void
+        onPending:  (result: Record<string, string>) => void
+        onError:    (result: Record<string, string>) => void
+        onClose:    () => void
       }) => void
     }
   }
@@ -26,64 +26,92 @@ declare global {
 
 const statusInfo = (status: string): { icon: ReactElement; label: string; color: string } => {
   const map: Record<string, { icon: ReactElement; label: string; color: string }> = {
-    menunggu_pembayaran: { icon: <Clock size={20} />,       label: 'Menunggu Pembayaran', color: 'text-amber-500'  },
-    sudah_dibayar:       { icon: <CheckCircle size={20} />, label: 'Pembayaran Berhasil', color: 'text-green-500'  },
-    dikonfirmasi:        { icon: <CheckCircle size={20} />, label: 'Booking Dikonfirmasi', color: 'text-indigo-500' },
-    aktif:               { icon: <CheckCircle size={20} />, label: 'Booking Aktif',        color: 'text-green-500'  },
-    dibatalkan:          { icon: <XCircle size={20} />,     label: 'Pembayaran Dibatalkan', color: 'text-red-500'   },
-    hangus:              { icon: <XCircle size={20} />,     label: 'Booking Hangus',        color: 'text-orange-500' },
-    selesai:             { icon: <CheckCircle size={20} />, label: 'Booking Selesai',       color: 'text-slate-500'  },
+    'menunggupembayaran': { icon: <Clock size={20} />,        label: 'Menunggu Pembayaran',  color: 'text-amber-500'  },
+    'sudahdibayar':       { icon: <CheckCircle size={20} />,  label: 'Pembayaran Berhasil',  color: 'text-green-500'  },
+    'dikonfirmasi':       { icon: <CheckCircle size={20} />,  label: 'Booking Dikonfirmasi', color: 'text-indigo-500' },
+    'aktif':              { icon: <CheckCircle size={20} />,  label: 'Booking Aktif',        color: 'text-green-500'  },
+    'dibatalkan':         { icon: <XCircle size={20} />,      label: 'Pembayaran Dibatalkan',color: 'text-red-500'    },
+    'hangus':             { icon: <XCircle size={20} />,      label: 'Booking Hangus',       color: 'text-orange-500' },
+    'selesai':            { icon: <CheckCircle size={20} />,  label: 'Booking Selesai',      color: 'text-slate-500'  },
   }
   return map[status] ?? { icon: <Clock size={20} />, label: status, color: 'text-slate-500' }
 }
 
 const PaymentPage = memo(() => {
-  const { id }                      = useParams<{ id: string }>()
-  const navigate                    = useNavigate()
-  const [booking, setBooking]       = useState<Booking | null>(null)
-  const [loading, setLoading]       = useState(true)
-  const [paying, setPaying]         = useState(false)
-  const [checking, setChecking]     = useState(false)
-  const [error, setError]           = useState('')
+  const { id }       = useParams<{ id: string }>()
+  const navigate     = useNavigate()
+  const [booking, setBooking] = useState<Booking | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [paying,  setPaying]  = useState(false)
+  const [checking,setChecking]= useState(false)
+  const [error,   setError]   = useState('')
+  // Simpan AudioContext yang dibuat saat gesture (klik Bayar) agar tetap hidup saat onSuccess
+  const acRef = useRef<AudioContext | null>(null)
 
+  // ✅ FIX 2: Realtime listener, bukan one-time fetch
   useEffect(() => {
     if (!id) return
-    getBookingById(id).then(setBooking).finally(() => setLoading(false))
+    setLoading(true)
+    const unsub = listenBookingById(id, (data) => {
+      setBooking(data)
+      setLoading(false)
+    })
+    return () => unsub()
   }, [id])
 
   const handlePay = async () => {
     if (!booking) return
     setPaying(true)
     setError('')
+
+    // ✅ FIX 1: Buat AudioContext di sini — DALAM gesture (klik tombol Bayar)
+    try {
+      const ACtx = window.AudioContext ?? (window as any).webkitAudioContext
+      if (ACtx) {
+        acRef.current = new ACtx()
+        // Langsung resume agar siap saat onSuccess dipanggil
+        if (acRef.current.state === 'suspended') await acRef.current.resume()
+      }
+    } catch (_) {}
+
     try {
       const token = await createSnapToken({
-        bookingId:   booking.id,
-        orderId:     booking.orderId,
-        totalHarga:  booking.totalHarga,
-        penyewaNama: booking.penyewaNama,
+        bookingId:    booking.id,
+        orderId:      booking.orderId,
+        totalHarga:   booking.totalHarga,
+        penyewaNama:  booking.penyewaNama,
         penyewaEmail: booking.penyewaEmail,
-        penyewaNoHp: booking.penyewaNoHp,
+        penyewaNoHp:  booking.penyewaNoHp,
       })
 
       window.snap.pay(token, {
-        onSuccess: () => {
-  void playSuccessSound()   // ← tambahkan ini
-  setBooking(prev => prev ? { ...prev, status: 'sudah_dibayar' as BookingStatus } : prev)
-  setPaying(false)
-},
-        onPending: () => {
-          void playPendingSound()
-          setBooking(prev => prev ? { ...prev, status: 'menunggu_pembayaran' as BookingStatus } : prev)
+        onSuccess: async (result) => {
+          // ✅ FIX 1: Pakai AudioContext yang sudah dibuat saat gesture
+          playSuccessSound(acRef.current ?? undefined)
+
+          // Update status & pembayaran di Firestore
+          const pembayaran: PembayaranInfo = {
+            transactionId:     result.transaction_id ?? '',
+            paymentType:       result.payment_type   ?? '',
+            transactionStatus: result.transaction_status ?? 'settlement',
+            paidAt:            new Date(),
+          }
+          await konfirmasiPembayaran(booking.id, booking, pembayaran)
+          // listenBookingById akan otomatis update UI — tidak perlu setBooking manual
           setPaying(false)
         },
-        onError: (_result: Record<string, string>) => {
-    void playErrorSound()
-    setError('Pembayaran gagal, silakan coba lagi.')
-    setPaying(false)
-  },
-  onClose: () => {          // ← ini yang menyebabkan error TS2345
-    setPaying(false)
-  },
+        onPending: () => {
+          playPendingSound(acRef.current ?? undefined)
+          setPaying(false)
+        },
+        onError: () => {
+          playErrorSound(acRef.current ?? undefined)
+          setError('Pembayaran gagal, silakan coba lagi.')
+          setPaying(false)
+        },
+        onClose: () => {
+          setPaying(false)
+        },
       })
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Gagal memproses pembayaran')
@@ -97,7 +125,15 @@ const PaymentPage = memo(() => {
     setError('')
     try {
       const status = await checkPaymentStatus(booking.orderId) as BookingStatus
-      setBooking(prev => prev ? { ...prev, status } : prev)
+      // Jika sudah bayar tapi status belum terupdate, paksa update
+      if (status === 'settlement' || status === 'capture') {
+        await konfirmasiPembayaran(booking.id, booking, {
+          transactionId: '',
+          paymentType: '',
+          transactionStatus: status,
+          paidAt: new Date(),
+        })
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Gagal mengecek status pembayaran')
     } finally {
@@ -106,7 +142,6 @@ const PaymentPage = memo(() => {
   }
 
   if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>
-
   if (!booking) return (
     <div className="text-center py-20 text-slate-400">
       <p>Booking tidak ditemukan</p>
@@ -123,8 +158,7 @@ const PaymentPage = memo(() => {
       {/* Status */}
       <Card padding="md" className="mb-4">
         <div className={`flex items-center gap-2 font-semibold ${color}`}>
-          {icon}
-          <span>{label}</span>
+          {icon} <span>{label}</span>
         </div>
       </Card>
 
@@ -133,11 +167,11 @@ const PaymentPage = memo(() => {
         <h3 className="font-semibold text-slate-700 mb-3">Detail Booking</h3>
         <div className="flex flex-col gap-2 text-sm">
           {[
-            { label: 'Kost',           value: booking.listingNama                },
-            { label: 'Alamat',         value: booking.listingAlamat              },
-            { label: 'Tipe Sewa',      value: booking.tipeKamar                  },
-            { label: 'Durasi',         value: `${booking.durasi} ${booking.tipeKamar === 'harian' ? 'hari' : booking.tipeKamar === 'mingguan' ? 'minggu' : 'bulan'}` },
-            { label: 'Order ID',       value: booking.orderId                    },
+            { label: 'Kost',      value: booking.listingNama   },
+            { label: 'Alamat',    value: booking.listingAlamat },
+            { label: 'Tipe Sewa', value: booking.tipeKamar     },
+            { label: 'Durasi',    value: `${booking.durasi} ${booking.tipeKamar === 'harian' ? 'hari' : booking.tipeKamar === 'mingguan' ? 'minggu' : 'bulan'}` },
+            { label: 'Order ID',  value: booking.orderId       },
           ].map((item, i) => (
             <div key={i} className="flex justify-between gap-4">
               <span className="text-slate-400 flex-shrink-0">{item.label}</span>
@@ -151,10 +185,7 @@ const PaymentPage = memo(() => {
       <Card padding="md" className="mb-4 bg-amber-50 border border-amber-100">
         <div className="flex flex-col gap-1.5 text-sm">
           <div className="flex justify-between text-slate-600">
-            <span>
-              {formatRupiah(booking.hargaSatuan)} × {booking.durasi}{' '}
-              {booking.tipeKamar === 'harian' ? 'hari' : booking.tipeKamar === 'mingguan' ? 'minggu' : 'bulan'}
-            </span>
+            <span>{formatRupiah(booking.hargaSatuan)} × {booking.durasi} {booking.tipeKamar === 'harian' ? 'hari' : booking.tipeKamar === 'mingguan' ? 'minggu' : 'bulan'}</span>
             <span>{formatRupiah(booking.hargaSatuan * booking.durasi)}</span>
           </div>
           <div className="border-t border-amber-200 pt-1.5 flex justify-between font-bold text-slate-900">
@@ -167,12 +198,12 @@ const PaymentPage = memo(() => {
       {/* Error */}
       {error && (
         <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 rounded-xl px-3 py-2.5 mb-4">
-          <AlertCircle size={15} />{error}
+          <AlertCircle size={15} /> {error}
         </div>
       )}
 
       {/* Action Buttons */}
-      {booking.status === 'menunggu_pembayaran' && (
+      {booking.status === 'menunggupembayaran' && (
         <div className="flex flex-col gap-3">
           <Button variant="primary" size="lg" fullWidth loading={paying} onClick={handlePay}>
             Bayar Sekarang {formatRupiah(booking.totalHarga)}
@@ -183,13 +214,14 @@ const PaymentPage = memo(() => {
         </div>
       )}
 
-      {booking.status === 'sudah_dibayar' && (
+      {/* ✅ FIX 3: Route benar pakai leading slash */}
+      {booking.status === 'sudahdibayar' && (
         <div className="flex flex-col gap-3">
           <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-green-700 text-sm text-center font-medium">
             Pembayaran berhasil! Menunggu konfirmasi pemilik.
           </div>
           <Button variant="ghost" size="lg" fullWidth onClick={() => navigate(`/booking/detail/${booking.id}`)}>
-            Lihat Detail Booking
+            Lihat Bukti Booking
           </Button>
         </div>
       )}
@@ -197,7 +229,7 @@ const PaymentPage = memo(() => {
       {(booking.status === 'dikonfirmasi' || booking.status === 'aktif') && (
         <div className="flex flex-col gap-3">
           <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-green-700 text-sm text-center font-medium">
-            {booking.status === 'dikonfirmasi' ? 'Check-in sudah dikonfirmasi pemilik! 🎉' : 'Booking sedang aktif 🏠'}
+            {booking.status === 'dikonfirmasi' ? 'Check-in sudah dikonfirmasi pemilik!' : 'Booking sedang aktif'}
           </div>
           <Button variant="ghost" size="lg" fullWidth onClick={() => navigate(`/booking/detail/${booking.id}`)}>
             Lihat Detail Booking
