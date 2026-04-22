@@ -25,13 +25,13 @@ declare global {
 
 const statusInfo = (status: string): { icon: ReactElement; label: string; color: string } => {
   const map: Record<string, { icon: ReactElement; label: string; color: string }> = {
-    'menunggupembayaran': { icon: <Clock size={20} />,        label: 'Menunggu Pembayaran',  color: 'text-amber-500'  },
-    'sudahdibayar':       { icon: <CheckCircle size={20} />,  label: 'Pembayaran Berhasil',  color: 'text-green-500'  },
-    'dikonfirmasi':       { icon: <CheckCircle size={20} />,  label: 'Booking Dikonfirmasi', color: 'text-indigo-500' },
-    'aktif':              { icon: <CheckCircle size={20} />,  label: 'Booking Aktif',        color: 'text-green-500'  },
-    'dibatalkan':         { icon: <XCircle size={20} />,      label: 'Pembayaran Dibatalkan',color: 'text-red-500'    },
-    'hangus':             { icon: <XCircle size={20} />,      label: 'Booking Hangus',       color: 'text-orange-500' },
-    'selesai':            { icon: <CheckCircle size={20} />,  label: 'Booking Selesai',      color: 'text-slate-500'  },
+    'menunggu_pembayaran': { icon: <Clock size={20} />,       label: 'Menunggu Pembayaran',  color: 'text-amber-500'  },
+    'sudah_dibayar':       { icon: <CheckCircle size={20} />, label: 'Pembayaran Berhasil',  color: 'text-green-500'  },
+    'dikonfirmasi':        { icon: <CheckCircle size={20} />, label: 'Booking Dikonfirmasi', color: 'text-indigo-500' },
+    'aktif':               { icon: <CheckCircle size={20} />, label: 'Booking Aktif',        color: 'text-green-500'  },
+    'dibatalkan':          { icon: <XCircle size={20} />,     label: 'Pembayaran Dibatalkan',color: 'text-red-500'    },
+    'hangus':              { icon: <XCircle size={20} />,     label: 'Booking Hangus',       color: 'text-orange-500' },
+    'selesai':             { icon: <CheckCircle size={20} />, label: 'Booking Selesai',      color: 'text-slate-500'  },
   }
   return map[status] ?? { icon: <Clock size={20} />, label: status, color: 'text-slate-500' }
 }
