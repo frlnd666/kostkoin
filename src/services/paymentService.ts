@@ -19,8 +19,8 @@ export const createSnapToken = async (payload: {
 }
 
 export const checkPaymentStatus = async (orderId: string): Promise<string> => {
-  const res  = await fetch(`${BACKEND_URL}/api/payment/status/${orderId}`)
+  const res = await fetch(`/api/payment/status/${orderId}`) // orderId = "KK-GPXEKH9E-..."
   const data = await res.json()
-  if (!res.ok) throw new Error(data.error ?? 'Gagal cek status pembayaran')
+  if (!res.ok) throw new Error(data.error ?? 'Gagal cek status')
   return data.status
 }
