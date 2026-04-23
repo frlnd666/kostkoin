@@ -10,7 +10,7 @@ import {
   konfirmasiPembayaran,
 } from '../../services/bookingService'
 import { createSnapToken, checkPaymentStatus } from '../../services/paymentService'
-import type { Booking, BookingStatus, PembayaranInfo } from '../../types/booking'
+import type { Booking, PembayaranInfo } from '../../types/booking'
 import { formatRupiah }  from '../../utils/format'
 import Card              from '../../components/ui/Card'
 import Button            from '../../components/ui/Button'
