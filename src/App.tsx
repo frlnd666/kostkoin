@@ -2,9 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
 
 // Layout
-import Navbar          from './components/layout/Navbar'
-import Footer          from './components/layout/Footer'
-import ProtectedRoute  from './components/layout/ProtectedRoute'
+import Navbar         from './components/layout/Navbar'
+import Footer         from './components/layout/Footer'
+import ProtectedRoute from './components/layout/ProtectedRoute'
 
 // Public
 import HomePage    from './pages/public/HomePage'
@@ -21,6 +21,7 @@ import BookingPage       from './pages/penyewa/BookingPage'
 import PaymentPage       from './pages/penyewa/PaymentPage'
 import RiwayatPage       from './pages/penyewa/RiwayatPage'
 import DetailBookingPage from './pages/penyewa/DetailBookingPage'
+import BuktiBooking      from './pages/penyewa/BuktiBooking'   // ← TAMBAH INI
 
 // Pemilik
 import DashboardPemilik from './pages/pemilik/DashboardPemilik'
@@ -83,9 +84,13 @@ function App() {
             <Route path="/riwayat" element={
               <ProtectedRoute allowedRoles={['penyewa']}><RiwayatPage /></ProtectedRoute>
             } />
-            {/* ✅ FIX: leading slash + urutan sebelum /booking/:id agar tidak bentrok */}
+            {/* ✅ FIX: leading slash */}
             <Route path="/booking/detail/:id" element={
               <ProtectedRoute allowedRoles={['penyewa']}><DetailBookingPage /></ProtectedRoute>
+            } />
+            {/* ✅ TAMBAH: route bukti booking yang sebelumnya tidak ada */}
+            <Route path="/booking/bukti/:id" element={
+              <ProtectedRoute allowedRoles={['penyewa']}><BuktiBooking /></ProtectedRoute>
             } />
 
             {/* Pemilik */}
@@ -104,7 +109,7 @@ function App() {
               <ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>
             } />
 
-            {/* Shared (semua role login) */}
+            {/* Shared */}
             <Route path="/notifikasi" element={
               <ProtectedRoute><NotifikasiPage /></ProtectedRoute>
             } />
