@@ -70,55 +70,22 @@ function App() {
         <div className="flex-1 pb-16">
           <Routes>
 
-            {/* ── Public ─────────────────────────────────── */}
-            <Route path="/"            element={<HomePage />} />
-            <Route path="/listing"     element={<ListingPage />} />
-            <Route path="/listing/:id" element={<DetailPage />} />
-
-            {/* ── Auth ───────────────────────────────────── */}
-            <Route path="/login"    element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-
-            {/* ── Penyewa ────────────────────────────────── */}
-            <Route path="/profil" element={
-              <ProtectedRoute><ProfilPage /></ProtectedRoute>
-            } />
-            <Route path="/booking/:id" element={
-              <ProtectedRoute allowedRoles={['penyewa']}><BookingPage /></ProtectedRoute>
-            } />
-            <Route path="/payment/:id" element={
-              <ProtectedRoute allowedRoles={['penyewa']}><PaymentPage /></ProtectedRoute>
-            } />
-            <Route path="/riwayat" element={
-              <ProtectedRoute allowedRoles={['penyewa']}><RiwayatPage /></ProtectedRoute>
-            } />
-            <Route path="/booking/detail/:id" element={
-              <ProtectedRoute allowedRoles={['penyewa']}><DetailBookingPage /></ProtectedRoute>
-            } />
-
-            {/* ── Pemilik ────────────────────────────────── */}
-            <Route path="/pemilik/dashboard" element={
-              <ProtectedRoute allowedRoles={['pemilik']}><DashboardPemilik /></ProtectedRoute>
-            } />
-            <Route path="/pemilik/tambah" element={
-              <ProtectedRoute allowedRoles={['pemilik']}><TambahListing /></ProtectedRoute>
-            } />
-            <Route path="/pemilik/booking" element={
-              <ProtectedRoute allowedRoles={['pemilik']}><BookingMasukPage /></ProtectedRoute>
-            } />
-
-            {/* ── Admin ──────────────────────────────────── */}
-            <Route path="/admin/dashboard" element={
-              <ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>
-            } />
-
-            {/* ── Notifikasi ──────────────────────────────── */}
-            <Route path="/notifikasi" element={
-              <ProtectedRoute><NotifikasiPage /></ProtectedRoute>
-            } />
-
-            {/* ── Fallback ───────────────────────────────── */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="/"                    element={<HomePage />} />
+<Route path="/listing"             element={<ListingPage />} />
+<Route path="/listing/:id"         element={<DetailPage />} />
+<Route path="/login"               element={<LoginPage />} />
+<Route path="/register"            element={<RegisterPage />} />
+<Route path="/profil"              element={<ProtectedRoute><ProfilPage /></ProtectedRoute>} />
+<Route path="/booking/:id"         element={<ProtectedRoute allowedRoles={['penyewa']}><BookingPage /></ProtectedRoute>} />
+<Route path="/payment/:id"         element={<ProtectedRoute allowedRoles={['penyewa']}><PaymentPage /></ProtectedRoute>} />
+<Route path="/riwayat"             element={<ProtectedRoute allowedRoles={['penyewa']}><RiwayatPage /></ProtectedRoute>} />
+<Route path="/booking/detail/:id"  element={<ProtectedRoute allowedRoles={['penyewa']}><DetailBookingPage /></ProtectedRoute>} />
+<Route path="/pemilik/dashboard"   element={<ProtectedRoute allowedRoles={['pemilik']}><DashboardPemilik /></ProtectedRoute>} />
+<Route path="/pemilik/tambah"      element={<ProtectedRoute allowedRoles={['pemilik']}><TambahListing /></ProtectedRoute>} />
+<Route path="/pemilik/booking"     element={<ProtectedRoute allowedRoles={['pemilik']}><BookingMasukPage /></ProtectedRoute>} />
+<Route path="/admin/dashboard"     element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+<Route path="/notifikasi"          element={<ProtectedRoute><NotifikasiPage /></ProtectedRoute>} />
+<Route path="*"                    element={<Navigate to="/" replace />} />
 
           </Routes>
         </div>
