@@ -1,7 +1,5 @@
 import type { Timestamp } from 'firebase/firestore'
-import Card    from '../../components/ui/Card'
-import Button  from '../../components/ui/Button'
-import Spinner from '../../components/ui/Spinner'
+
 
 export type TipeKamar = 'harian' | 'mingguan' | 'bulanan'
 
