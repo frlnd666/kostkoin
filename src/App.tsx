@@ -33,6 +33,7 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 
 // Shared
 import NotifikasiPage from './pages/shared/NotifikasiPage'
+import { unlockAudio } from './utils/notifSound'
 
 // Store / Service
 import { useAuthStore }              from './store/authStore'
