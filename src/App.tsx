@@ -35,6 +35,7 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import NotifikasiPage from './pages/shared/NotifikasiPage'
 import { unlockAudio } from './utils/notifSound'
 import { requestNotifPermission, listenForegroundNotif } from './services/fcmService'
+import { playNotifSound } from './utils/notifSound'
 
 // Store / Service
 import { useAuthStore }              from './store/authStore'
