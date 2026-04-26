@@ -2,12 +2,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js'
 importScripts('https://www.gstatic.com/firebasejs/10.0.0/firebase-messaging-compat.js')
 
 firebase.initializeApp({
-  apiKey:            "ISI_DARI_FIREBASE_CONFIG",
-  authDomain:        "ISI_DARI_FIREBASE_CONFIG",
-  projectId:         "ISI_DARI_FIREBASE_CONFIG",
-  storageBucket:     "ISI_DARI_FIREBASE_CONFIG",
-  messagingSenderId: "ISI_DARI_FIREBASE_CONFIG",
-  appId:             "ISI_DARI_FIREBASE_CONFIG",
+  apiKey:            "AIzaSyBE2_i-vCf7cTOJbeu3Jy-R5-ycOAUua8c",
+  authDomain:        "kostkoin.firebaseapp.com",
+  projectId:         "kostkoin",
+  storageBucket:     "kostkoin.firebasestorage.app",
+  messagingSenderId: "475360300341",
+  appId:             "1:475360300341:web:b7fec8dfe0a611c5b5d07c",
 })
 
 const messaging = firebase.messaging()
