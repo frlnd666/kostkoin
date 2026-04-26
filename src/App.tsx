@@ -59,6 +59,22 @@ function App() {
     return () => unsubscribe()
   }, [])
 
+useEffect(() => {
+  if (!user?.uid) return
+
+  // Minta izin notif push
+  requestNotifPermission(user.uid)
+
+  // Tangani notif saat app terbuka (foreground)
+  const unsub = listenForegroundNotif((title, body) => {
+    playNotifSound()
+    // Tampilkan toast/banner in-app jika mau
+    console.log('Notif foreground:', title, body)
+  })
+
+  return () => unsub()
+}, [user?.uid])
+  
   useEffect(() => {
     const handler = () => {
       unlockAudio()
