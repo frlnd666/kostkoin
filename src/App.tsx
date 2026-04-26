@@ -57,6 +57,21 @@ function App() {
     return () => unsubscribe()
   }, [])
 
+  useEffect(() => {
+    const handler = () => {
+      unlockAudio()
+      // Hapus listener setelah sekali jalan — tidak perlu terus aktif
+      window.removeEventListener('touchstart', handler)
+      window.removeEventListener('mousedown', handler)
+    }
+    window.addEventListener('touchstart', handler, { once: true })
+    window.addEventListener('mousedown', handler, { once: true })
+    return () => {
+      window.removeEventListener('touchstart', handler)
+      window.removeEventListener('mousedown', handler)
+    }
+  }, [])
+
   return (
     <BrowserRouter>
       <div className="min-h-screen flex flex-col bg-slate-50">
